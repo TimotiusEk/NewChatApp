@@ -101,6 +101,17 @@ public class HomeActivity extends AppCompatActivity {
                 .getCurrentUser()
                 .getEmail());
 
+        user = new LastLoginUser(
+                FirebaseAuth.getInstance()
+                        .getCurrentUser()
+                        .getEmail());
+
+        mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+
+        String userId = mDatabase.push().getKey();
+
+        mDatabase.child(userId).setValue(user);
+
 
         applesQuery.addValueEventListener(new ValueEventListener() {
             @Override
@@ -147,8 +158,9 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-                    if (user.getUserLastLoginTime() != (long) appleSnapshot.child("userLastLoginTime").getValue()) {
+                    if (user.getUserLastLoginTime() > (long) appleSnapshot.child("userLastLoginTime").getValue()) {
                         appleSnapshot.getRef().removeValue();
+
                     }
 
                 }
