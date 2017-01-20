@@ -12,6 +12,27 @@
     <ListView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/show_friend_list_view"/>
+        android:id="@+id/show_friend_list_view"
+        android:visibility="gone"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/show_no_friend"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/intent_to_find_friend_btn"
+        android:layout_marginBottom="50dp"
+        android:text="You haven't any friends yet"
+        />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="FIND FRIEND"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:padding="15dp"
+        android:id="@+id/intent_to_find_friend_btn"
+        />
 
 </RelativeLayout>

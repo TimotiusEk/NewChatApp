@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
@@ -22,7 +23,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -31,12 +31,14 @@ public class HomeActivity extends AppCompatActivity {
     private LastLoginUser user;
     private DatabaseReference mDatabase;
     private DatabaseReference mDatabaseUser;
-
+    private TextView showNoChat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        showNoChat = (TextView) findViewById(R.id.show_no_chat);
 
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
@@ -51,7 +53,6 @@ public class HomeActivity extends AppCompatActivity {
             updateRecentUser();
 
         }
-
 
 
         /**
@@ -86,11 +87,10 @@ public class HomeActivity extends AppCompatActivity {
         // http://www.androidhive.info/2016/10/android-working-with-firebase-realtime-database/
 
 
-
     }
 
 
-    public void updateRecentUser(){
+    public void updateRecentUser() {
 
 
         /*
@@ -101,224 +101,105 @@ public class HomeActivity extends AppCompatActivity {
                 .getCurrentUser()
                 .getEmail());
 
-        user = new LastLoginUser(
-                FirebaseAuth.getInstance()
-                        .getCurrentUser()
-                        .getEmail());
 
-        mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-
-        String userId = mDatabase.push().getKey();
-
-        mDatabase.child(userId).setValue(user);
-
-
-        applesQuery.addValueEventListener(new ValueEventListener() {
+        applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-                    ArrayList<String> friends = null;
-                    for (DataSnapshot data : dataSnapshot.getChildren()) {
-                        LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
-                        friends = user.getFriends();
-                    }
-                    if(friends == null){
-                        user = new LastLoginUser(
-                                FirebaseAuth.getInstance()
-                                        .getCurrentUser()
-                                        .getEmail());
-//                        Log.d("null", "true");
-                    }
-                    else{
-                        user = new LastLoginUser(
-                                FirebaseAuth.getInstance()
-                                        .getCurrentUser()
-                                        .getEmail(), friends);
-//                        Log.d("null", "false");
-                    }
+                if (dataSnapshot.getChildrenCount() == 0) {
+                    // run some code
+                    user = new LastLoginUser(
+                            FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail());
+
+
                     mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
                     String userId = mDatabase.push().getKey();
 
                     mDatabase.child(userId).setValue(user);
 
-                }
-                ref.removeEventListener(this);
-            }
+                } else {
+                    applesQuery.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                                ArrayList<String> friends = null;
+                                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
+                                    friends = user.getFriends();
+                                }
+                                if (friends == null) {
+                                    user = new LastLoginUser(
+                                            FirebaseAuth.getInstance()
+                                                    .getCurrentUser()
+                                                    .getEmail());
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
+                                } else {
+                                    user = new LastLoginUser(
+                                            FirebaseAuth.getInstance()
+                                                    .getCurrentUser()
+                                                    .getEmail(), friends);
 
-            }
+                                }
+                                mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
-        });
+                                String userId = mDatabase.push().getKey();
+
+                                mDatabase.child(userId).setValue(user);
+
+                            }
+                            ref.removeEventListener(this);
+
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+
+                    });
 
 
-        applesQuery.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-                    if (user.getUserLastLoginTime() > (long) appleSnapshot.child("userLastLoginTime").getValue()) {
-                        appleSnapshot.getRef().removeValue();
+                    applesQuery.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                                if (user.getUserLastLoginTime() > (long) appleSnapshot.child("userLastLoginTime").getValue()) {
+                                    appleSnapshot.getRef().removeValue();
 
-                    }
+                                }
 
-                }
+                            }
 //                ref.removeEventListener(this);
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+
+                    });
+
+
+                }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
             }
-
         });
-
-
-
-
 
         getRecentMessage();
 
-
-//        checkThenAddFriend("asdfgh");
-        /**
-         * ToDo :Testing Buat dapetin, update, dan delete ArrayList dari firebase
-         */
-
-
     }
 
-//    public void checkThenAddFriend(final String email){
-//        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-//
-//        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
-//                .getCurrentUser()
-//                .getEmail());
-//
-//        applesQuery.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//                ArrayList<String> friends = null;
-//                long date = 0;
-//                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-//                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
-//                    friends = user.getFriends();
-//                }
-//                if(friends == null){
-//                    initializeFirstFriend(email);
-//                    Log.d("friendNull", String.valueOf(true));
-//
-//                }
-//                else{
-//                    addFriend(email);
-//                    Log.d("friendNull", String.valueOf(false));
-//                }
-//
-//
-//            }
-//
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
 
-//    public void initializeFirstFriend(final String email) {
-//
-//        final ArrayList<String> friends = new ArrayList<>();
-//        friends.add(email);
-//
-//        user = new LastLoginUser(
-//                FirebaseAuth.getInstance()
-//                        .getCurrentUser()
-//                        .getEmail(), friends);
-//
-//        /*
-//         * Todo : bikin method buat masukin data ke login ke db
-//         */
-//
-//        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-//        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
-//                .getCurrentUser()
-//                .getEmail());
-//
-//        final String[] userId = {null};
-//
-//
-//        applesQuery.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-//                    userId[0] = appleSnapshot.getKey();
-//                }
-//                mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-//
-//
-//
-//                mDatabase.child(userId[0]).child("friends").setValue(friends);
-//                ref.removeEventListener(this);
-//            }
-//
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {
-//
-//            }
-//
-//        });
-//
-//
-//
-//
-//
-//    }
-//    public void addFriend(final String email){
-//        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-//        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
-//                .getCurrentUser()
-//                .getEmail());
-//
-//        applesQuery.addValueEventListener(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//                ArrayList<String> friendsArrayList;
-//
-//
-//                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-//
-//                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
-//                    boolean alreadyFriend = false;
-//
-//                    friendsArrayList = user.getFriends();
-//
-//                    if(friendsArrayList != null) {
-//                        for (String friendName : friendsArrayList) {
-//                            if (friendName.equalsIgnoreCase(email)) {
-//
-//                                alreadyFriend = true;
-//                            }
-//                        }
-//                    }
-//
-//                    if(!alreadyFriend && friendsArrayList != null) {
-//                        Log.d("masuk", "true");
-//                        friendsArrayList.add(email);
-//
-//                        appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
-//                    }
-//
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {
-//
-//            }
-//
-//        });
-//    }
+    /**
+     * ToDo :Cari cara Buat delete ArrayList dari firebase (delete friend)
+     */
+
 
     public void getRecentMessage() {
         mDatabaseUser = FirebaseDatabase.getInstance().getReference("LastLoginUser");
@@ -328,11 +209,43 @@ public class HomeActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 final ArrayList<LastLoginUser> loginUserArrayList = new ArrayList<LastLoginUser>();
                 final ArrayList<ChatMessage> chatMessageArrayList = new ArrayList<ChatMessage>();
+                ArrayList<String> friendArrayList = new ArrayList<>();
 
                 for (DataSnapshot data : dataSnapshot.getChildren()) {
                     LastLoginUser user = data.getValue(LastLoginUser.class);
-                    loginUserArrayList.add(user);
+                    if (user.getUserEmail().equalsIgnoreCase(FirebaseAuth.getInstance()
+                            .getCurrentUser()
+                            .getEmail())) {
+                        friendArrayList = user.getFriends();
+                    }
                 }
+
+
+
+
+                int counter = 0;
+                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                    LastLoginUser user = data.getValue(LastLoginUser.class);
+
+                    if(friendArrayList != null && friendArrayList.size() != 0) {
+                        Log.d("counter", String.valueOf(counter));
+
+                        if (counter < friendArrayList.size()) {
+                            Log.d("userGetEmail", user.getUserEmail());
+                            Log.d("userGetFriend", friendArrayList.get(counter));
+                            if (user.getUserEmail().equalsIgnoreCase(friendArrayList.get(counter))) {
+                                loginUserArrayList.add(user);
+
+                            }
+
+                        }
+                    }
+                    counter++;
+                }
+
+
+
+                Log.d("loginUserArrayList", String.valueOf(loginUserArrayList.size()));
                 mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
                 mDatabase.addValueEventListener(new ValueEventListener() {
                     @Override
@@ -363,14 +276,22 @@ public class HomeActivity extends AppCompatActivity {
                                         loginUserArrayList.get(b).setLastMessageTime(chatMessageArrayList.get(a).getMessageTime());
 
 
-
                                     }
+
+
 
                                 }
 
                             }
 
 
+                        }
+
+
+                        for(int a = 0 ; a < loginUserArrayList.size() ; a++){
+                            if(loginUserArrayList.get(a).getLastMessageTime() == 0){
+                                loginUserArrayList.remove(a);
+                            }
                         }
                         final ListView listOfMessages = (ListView) findViewById(R.id.list_of_users_and_messages);
 
@@ -384,17 +305,22 @@ public class HomeActivity extends AppCompatActivity {
                                 Bundle mBundle = new Bundle();
                                 mBundle.putString("email", user.getUserEmail());
                                 mIntent.putExtras(mBundle);
-                                if (user.getUserEmail() != null) {
-                                    startActivity(mIntent);
-                                }
-
-
+                                startActivity(mIntent);
                             }
                         });
-                        Collections.sort(loginUserArrayList, LastLoginUser.RecentChatComparator);
-                        final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUserArrayList);
-                        listOfMessages.setAdapter(customAdapter);
-                        customAdapter.notifyDataSetChanged();
+
+                        if (loginUserArrayList.size() != 0) {
+                            listOfMessages.setVisibility(View.VISIBLE);
+                            showNoChat.setVisibility(View.GONE);
+                            Collections.sort(loginUserArrayList, LastLoginUser.RecentChatComparator);
+                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUserArrayList);
+                            listOfMessages.setAdapter(customAdapter);
+                            customAdapter.notifyDataSetChanged();
+                        }
+                        else{
+                            listOfMessages.setVisibility(View.GONE);
+                            showNoChat.setVisibility(View.VISIBLE);
+                        }
 
 
                     }
@@ -406,7 +332,6 @@ public class HomeActivity extends AppCompatActivity {
 
 
                 });
-
 
 
             }
@@ -436,12 +361,10 @@ public class HomeActivity extends AppCompatActivity {
                             finish();
                         }
                     });
-        }
-        else if(item.getItemId() == R.id.menu_show_friends){
+        } else if (item.getItemId() == R.id.menu_show_friends) {
             Intent intent = new Intent(this, ShowFriendActivity.class);
             startActivity(intent);
-        }
-        else if(item.getItemId() == R.id.menu_find_friends){
+        } else if (item.getItemId() == R.id.menu_find_friends) {
             Intent intent = new Intent(this, FindFriendActivity.class);
             startActivity(intent);
         }
@@ -462,7 +385,7 @@ public class HomeActivity extends AppCompatActivity {
         if (requestCode == SIGN_IN_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
 
-            updateRecentUser();
+                updateRecentUser();
 
                 Toast.makeText(this,
                         "Successfully signed in. Welcome!",
@@ -470,17 +393,9 @@ public class HomeActivity extends AppCompatActivity {
                         .show();
 
 
-
-
-
-
                 /**
                  * Todo : bikin method buat masukin data ke login ke db
                  */
-
-
-
-
 
 
             } else {
@@ -495,4 +410,5 @@ public class HomeActivity extends AppCompatActivity {
         }
 
     }
+
 }

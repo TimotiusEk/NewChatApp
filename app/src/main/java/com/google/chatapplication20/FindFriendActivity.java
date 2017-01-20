@@ -27,6 +27,8 @@ public class FindFriendActivity extends AppCompatActivity {
     private TextView showFriendEmail;
     private LastLoginUser user;
     private DatabaseReference mDatabase;
+    Drawable drw;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +48,8 @@ public class FindFriendActivity extends AppCompatActivity {
             }
         });
 
-
+        drw = ContextCompat.getDrawable(getApplicationContext(), android.R.drawable.ic_delete);
+        drw.setBounds(0, 0, drw.getIntrinsicWidth(), drw.getIntrinsicHeight());
     }
 
     public void findFriend() {
@@ -75,6 +78,7 @@ public class FindFriendActivity extends AppCompatActivity {
                     inputFriendEmail.setError(null);
                     findFriendBtn.setText("Add Friend");
                     final String finalEmail = email;
+
                     checkThenAddFriend(finalEmail, true);
                     findFriendBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -94,8 +98,7 @@ public class FindFriendActivity extends AppCompatActivity {
             }
         });
 
-        Drawable drw = ContextCompat.getDrawable(getApplicationContext(), android.R.drawable.ic_delete);
-        drw.setBounds(0, 0, drw.getIntrinsicWidth(), drw.getIntrinsicHeight());
+
     }
 
     public void checkThenAddFriend(final String email, final boolean justCheck){
@@ -109,19 +112,16 @@ public class FindFriendActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 ArrayList<String> friends = null;
-                long date = 0;
                 for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
                     LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
                     friends = user.getFriends();
                 }
                 if(friends == null){
                     initializeFirstFriend(email);
-                    Log.d("friendNull", String.valueOf(true));
-
                 }
                 else{
+
                     addFriend(email, justCheck);
-                    Log.d("friendNull", String.valueOf(false));
                 }
 
 
@@ -161,14 +161,31 @@ public class FindFriendActivity extends AppCompatActivity {
                         }
                     }
 
-                    if(alreadyFriend && justCheck){
-                        showFriendEmail.append("\n (Already Friend)");
+                    if(alreadyFriend){
+                        showFriendEmail.setText(email + "\n (Already Friend)");
+                        findFriendBtn.setText("Find Another Friend");
+                        findFriendBtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                inputFriendEmail.setVisibility(View.VISIBLE);
+                                showFriendEmail.setVisibility(View.GONE);
+                                findFriendBtn.setText("Find Friend");
+
+                                findFriendBtn.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+
+                                    }
+                                });
+                            }
+                        });
                     }
                     else{
                         if(friendsArrayList != null){
                             friendsArrayList.add(email);
-
-                            appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
+                            if(!justCheck) {
+                                appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
+                            }
                         }
                     }
 
@@ -220,8 +237,6 @@ public class FindFriendActivity extends AppCompatActivity {
                     userId[0] = appleSnapshot.getKey();
                 }
                 mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
-
-
 
                 mDatabase.child(userId[0]).child("friends").setValue(friends);
                 ref.removeEventListener(this);

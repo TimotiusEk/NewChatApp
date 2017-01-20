@@ -14,10 +14,18 @@
         android:id="@+id/list_of_users_and_messages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-       android:layout_alignParentLeft="true"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginBottom="16dp"
         android:divider="@android:color/transparent"
         android:dividerHeight="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="You haven't got any chat"
+        android:id="@+id/show_no_chat"
+        android:layout_centerInParent="true"
+        android:visibility="gone"/>
 </RelativeLayout>
