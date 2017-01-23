@@ -13,6 +13,7 @@ import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -44,8 +45,7 @@ public class ChatActivity extends AppCompatActivity {
     private DatabaseReference mDatabase;
     public static int position = 0;
     public static boolean hasBelowUnreadMessage = false;
-
-
+    private boolean isLongClick;
 
 
     @Override
@@ -167,7 +167,6 @@ public class ChatActivity extends AppCompatActivity {
         final ListView listOfMessages = (ListView) findViewById(R.id.list_of_messages);
 
 
-
         mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
 
         if(!chatPartner.equalsIgnoreCase(FirebaseAuth.getInstance()
@@ -246,10 +245,12 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
+
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         switch(item.getItemId()) {
             case R.id.copy_text:
                 ListView listView = (ListView) findViewById(R.id.list_of_messages);
+
                 ChatMessage chatMessage = (ChatMessage) listView.getItemAtPosition(info.position);
                 ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("label", chatMessage.getMessageText());

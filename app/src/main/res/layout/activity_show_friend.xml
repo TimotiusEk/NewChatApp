@@ -23,7 +23,7 @@
         android:layout_centerHorizontal="true"
         android:layout_above="@+id/intent_to_find_friend_btn"
         android:layout_marginBottom="50dp"
-        android:text="You haven't any friends yet"
+        android:text="You haven't got any friends yet"
         />
     <Button
         android:layout_width="wrap_content"
@@ -33,6 +33,15 @@
         android:layout_centerVertical="true"
         android:padding="15dp"
         android:id="@+id/intent_to_find_friend_btn"
+        />
+    <android.support.design.widget.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add_black_24dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:id="@+id/fab_add_friend"
+        android:visibility="gone"
         />
 
 </RelativeLayout>

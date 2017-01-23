@@ -3,6 +3,7 @@ package com.google.chatapplication20;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,18 +33,22 @@ public class ShowFriendActivity extends AppCompatActivity {
     private ListView listView;
     private Button intentButton;
     private TextView showNoFriend;
+    private FloatingActionButton findFriendFab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_friend);
 
+        android.support.v7.app.ActionBar ab = getSupportActionBar();
+        ab.setTitle("Friend List");
+
         listView = (ListView) findViewById(R.id.show_friend_list_view);
         intentButton = (Button) findViewById(R.id.intent_to_find_friend_btn);
         showNoFriend = (TextView) findViewById(R.id.show_no_friend);
+        findFriendFab = (FloatingActionButton) findViewById(R.id.fab_add_friend);
 
         populateView();
-//        removeValue("eka.valentino@gmail.com");
     }
 
     @Override
@@ -98,6 +103,7 @@ public class ShowFriendActivity extends AppCompatActivity {
 
                 if(friends == null){
                     listView.setVisibility(View.GONE);
+                    findFriendFab.setVisibility(View.GONE);
                     intentButton.setVisibility(View.VISIBLE);
                     showNoFriend.setVisibility(View.VISIBLE);
 
@@ -112,11 +118,20 @@ public class ShowFriendActivity extends AppCompatActivity {
                 }
                 else {
                     listView.setVisibility(View.VISIBLE);
+                    findFriendFab.setVisibility(View.VISIBLE);
                     intentButton.setVisibility(View.GONE);
                     showNoFriend.setVisibility(View.GONE);
                     ArrayAdapter adapter = new ArrayAdapter<String>(ShowFriendActivity.this, android.R.layout.simple_list_item_1, friends);
                     listView.setAdapter(adapter);
                     registerForContextMenu(listView);
+
+                    findFriendFab.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Intent intent = new Intent(ShowFriendActivity.this, FindFriendActivity.class);
+                            startActivity(intent);
+                        }
+                    });
 
                     listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                         @Override

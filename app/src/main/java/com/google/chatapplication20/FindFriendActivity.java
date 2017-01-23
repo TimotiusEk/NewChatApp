@@ -36,6 +36,9 @@ public class FindFriendActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_find_friend);
 
+        android.support.v7.app.ActionBar ab = getSupportActionBar();
+        ab.setTitle("Find & Add Friend");
+
         findFriendBtn = (Button) findViewById(R.id.find_friend_btn);
 
         inputFriendEmail = (EditText) findViewById(R.id.input_find_friend_email);

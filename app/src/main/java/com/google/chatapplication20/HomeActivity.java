@@ -2,6 +2,7 @@ package com.google.chatapplication20;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,13 +33,18 @@ public class HomeActivity extends AppCompatActivity {
     private DatabaseReference mDatabase;
     private DatabaseReference mDatabaseUser;
     private TextView showNoChat;
+    private FloatingActionButton fabNewChat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        android.support.v7.app.ActionBar ab = getSupportActionBar();
+        ab.setTitle("Chat List");
+
         showNoChat = (TextView) findViewById(R.id.show_no_chat);
+        fabNewChat = (FloatingActionButton) findViewById(R.id.fab_new_chat);
 
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
@@ -53,6 +59,14 @@ public class HomeActivity extends AppCompatActivity {
             updateRecentUser();
 
         }
+        fabNewChat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(HomeActivity.this, ShowFriendActivity.class);
+                startActivity(intent);
+            }
+        });
+
 
 
         /**

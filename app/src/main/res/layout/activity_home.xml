@@ -28,4 +28,14 @@
         android:id="@+id/show_no_chat"
         android:layout_centerInParent="true"
         android:visibility="gone"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add_black_24dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:id="@+id/fab_new_chat"
+
+        />
 </RelativeLayout>
