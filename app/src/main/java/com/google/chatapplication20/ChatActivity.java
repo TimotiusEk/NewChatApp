@@ -1,5 +1,7 @@
 package com.google.chatapplication20;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -7,9 +9,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,6 +33,7 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.facebook.FacebookSdk.getApplicationContext;
 
@@ -103,6 +109,8 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+
+
     private void updateToRead(){
         mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
         final Query updateQuery = mDatabase.orderByChild("messageReceiver").equalTo(FirebaseAuth.getInstance()
@@ -130,7 +138,6 @@ public class ChatActivity extends AppCompatActivity {
                                         if (chatPartner.equalsIgnoreCase((String) data.child("messageSender").getValue())) {
                                             data.getRef().child("messageRead").setValue(true);
                                         }
-
                                     }
                                 }
 
@@ -208,6 +215,7 @@ public class ChatActivity extends AppCompatActivity {
 
 
                 listOfMessages.setAdapter(chatMessageAdapter);
+                registerForContextMenu(listOfMessages);
 
                 scrollMyListViewToBottom();
 
@@ -227,6 +235,33 @@ public class ChatActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        if (v.getId()==R.id.list_of_messages) {
+            MenuInflater inflater = getMenuInflater();
+            inflater.inflate(R.menu.menu_list, menu);
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        switch(item.getItemId()) {
+            case R.id.copy_text:
+                ListView listView = (ListView) findViewById(R.id.list_of_messages);
+                ChatMessage chatMessage = (ChatMessage) listView.getItemAtPosition(info.position);
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("label", chatMessage.getMessageText());
+                clipboard.setPrimaryClip(clip);
+                // add stuff here
+                return true;
+
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -241,11 +276,15 @@ public class ChatActivity extends AppCompatActivity {
                                     .show();
 
                             // Close activity
-
-                            ChatActivity.this.finishAffinity();
+                            finish();
                         }
                     });
-
+        } else if (item.getItemId() == R.id.menu_show_friends) {
+            Intent intent = new Intent(this, ShowFriendActivity.class);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.menu_find_friends) {
+            Intent intent = new Intent(this, FindFriendActivity.class);
+            startActivity(intent);
         }
         return true;
     }
@@ -263,6 +302,7 @@ public class ChatActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
+
     }
 
     @Override

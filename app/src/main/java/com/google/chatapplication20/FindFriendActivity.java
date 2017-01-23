@@ -1,5 +1,6 @@
 package com.google.chatapplication20;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -52,12 +53,14 @@ public class FindFriendActivity extends AppCompatActivity {
         drw.setBounds(0, 0, drw.getIntrinsicWidth(), drw.getIntrinsicHeight());
     }
 
+
+
     public void findFriend() {
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
         final Query findFriendQuery = ref.orderByChild("userEmail").equalTo(String.valueOf(inputFriendEmail.getText()));
 
-        findFriendQuery.addValueEventListener(new ValueEventListener() {
+        findFriendQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 Drawable drw = ContextCompat.getDrawable(getApplicationContext(), android.R.drawable.ic_delete);
@@ -117,13 +120,14 @@ public class FindFriendActivity extends AppCompatActivity {
                     friends = user.getFriends();
                 }
                 if(friends == null){
-                    initializeFirstFriend(email);
+                    initializeFirstFriend(email, justCheck);
                 }
                 else{
 
                     addFriend(email, justCheck);
                 }
 
+                applesQuery.removeEventListener(this);
 
             }
 
@@ -167,16 +171,9 @@ public class FindFriendActivity extends AppCompatActivity {
                         findFriendBtn.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                inputFriendEmail.setVisibility(View.VISIBLE);
-                                showFriendEmail.setVisibility(View.GONE);
-                                findFriendBtn.setText("Find Friend");
-
-                                findFriendBtn.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
-
-                                    }
-                                });
+                                Intent intent = getIntent();
+                                finish();
+                                startActivity(intent);
                             }
                         });
                     }
@@ -185,6 +182,16 @@ public class FindFriendActivity extends AppCompatActivity {
                             friendsArrayList.add(email);
                             if(!justCheck) {
                                 appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
+                                showFriendEmail.setText(email + "\n (Already Friend)");
+                                findFriendBtn.setText("Find Another Friend");
+                                findFriendBtn.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        Intent intent = getIntent();
+                                        finish();
+                                        startActivity(intent);
+                                    }
+                                });
                             }
                         }
                     }
@@ -198,6 +205,7 @@ public class FindFriendActivity extends AppCompatActivity {
 
 
                 }
+                applesQuery.removeEventListener(this);
             }
 
             @Override
@@ -208,7 +216,7 @@ public class FindFriendActivity extends AppCompatActivity {
         });
     }
 
-    public void initializeFirstFriend(final String email) {
+    public void initializeFirstFriend(final String email, final boolean justCheck) {
 
         final ArrayList<String> friends = new ArrayList<>();
         friends.add(email);
@@ -229,25 +237,37 @@ public class FindFriendActivity extends AppCompatActivity {
 
         final String[] userId = {null};
 
+        if(!justCheck) {
+            applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                        userId[0] = appleSnapshot.getKey();
+                    }
+                    mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
-        applesQuery.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
-                    userId[0] = appleSnapshot.getKey();
+                    mDatabase.child(userId[0]).child("friends").setValue(friends);
+
+                    showFriendEmail.setText(email + "\n (Already Friend)");
+                    findFriendBtn.setText("Find Another Friend");
+                    findFriendBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Intent intent = getIntent();
+                            finish();
+                            startActivity(intent);
+                        }
+                    });
+                    applesQuery.removeEventListener(this);
                 }
-                mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
-                mDatabase.child(userId[0]).child("friends").setValue(friends);
-                ref.removeEventListener(this);
-            }
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
+                }
 
-            }
-
-        });
+            });
+        }
 
 
 

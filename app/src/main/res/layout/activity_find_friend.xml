@@ -18,7 +18,8 @@
         android:layout_above="@+id/find_friend_btn"
         android:layout_marginBottom="50dp"
         android:hint="Find Friend by Email"
-        android:inputType="textEmailAddress"/>
+        android:inputType="textEmailAddress"
+        android:focusable="true"/>
 
     <TextView
         android:layout_width="wrap_content"

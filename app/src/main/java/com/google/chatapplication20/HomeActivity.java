@@ -222,10 +222,12 @@ public class HomeActivity extends AppCompatActivity {
                     loginUserArrayList.add(user);
                 }
 
-                for(String email : friendArrayList) {
-                    for (LastLoginUser user : loginUserArrayList) {
-                        if (user.getUserEmail().equalsIgnoreCase(email)){
-                            loginUsersFriend.add(user);
+                if(friendArrayList != null) {
+                    for (String email : friendArrayList) {
+                        for (LastLoginUser user : loginUserArrayList) {
+                            if (user.getUserEmail().equalsIgnoreCase(email)) {
+                                loginUsersFriend.add(user);
+                            }
                         }
                     }
                 }
