@@ -1,5 +1,8 @@
 package com.google.chatapplication20;
 
+import android.graphics.Bitmap;
+
+import java.io.File;
 import java.util.Comparator;
 import java.util.Date;
 
@@ -13,9 +16,27 @@ public class ChatMessage implements Comparable<ChatMessage>{
     private long messageTime;
     private String messageSender;
 
-
+    private File chatPicture;
 
     private boolean messageRead;
+
+    private boolean isPicture;
+
+    public boolean isPicture() {
+        return isPicture;
+    }
+
+    public void setPicture(boolean picture) {
+        isPicture = picture;
+    }
+
+    public File getChatPicture() {
+        return chatPicture;
+    }
+
+    public void setChatPicture(File chatPicture) {
+        this.chatPicture = chatPicture;
+    }
 
     public void setMessageRead(boolean messageRead) {
         this.messageRead = messageRead;
@@ -58,17 +79,19 @@ public class ChatMessage implements Comparable<ChatMessage>{
         return messageRead;
     }
 
-    public ChatMessage(String messageText, String messageReceiver, String messageSender) {
+    public ChatMessage(String messageText, String messageReceiver, String messageSender, boolean isPicture) {
         this.messageText = messageText;
         this.messageReceiver = messageReceiver;
         this.messageSender = messageSender;
         messageTime = new Date().getTime();
-        messageRead = false;
+        this.isPicture = isPicture;
     }
+
 
     ChatMessage(){
 
     }
+
 
     public static Comparator<ChatMessage> ChatDateComparator
             = new Comparator<ChatMessage>() {

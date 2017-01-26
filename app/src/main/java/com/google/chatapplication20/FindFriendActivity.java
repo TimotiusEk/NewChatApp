@@ -57,7 +57,6 @@ public class FindFriendActivity extends AppCompatActivity {
     }
 
 
-
     public void findFriend() {
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
@@ -71,13 +70,13 @@ public class FindFriendActivity extends AppCompatActivity {
                 String email = null;
                 for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
                     LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
-                    if(user.getUserEmail() != null){
+                    if (user.getUserEmail() != null) {
                         found = true;
                         email = user.getUserEmail();
                     }
                 }
 
-                if(found){
+                if (found) {
                     inputFriendEmail.setVisibility(View.GONE);
                     showFriendEmail.setVisibility(View.VISIBLE);
                     showFriendEmail.setText(email);
@@ -92,8 +91,7 @@ public class FindFriendActivity extends AppCompatActivity {
                             checkThenAddFriend(finalEmail, false);
                         }
                     });
-                }
-                else{
+                } else {
                     inputFriendEmail.setError("email tidak ditemukan", drw);
                 }
             }
@@ -107,7 +105,7 @@ public class FindFriendActivity extends AppCompatActivity {
 
     }
 
-    public void checkThenAddFriend(final String email, final boolean justCheck){
+    public void checkThenAddFriend(final String email, final boolean justCheck) {
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
         final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
@@ -122,10 +120,9 @@ public class FindFriendActivity extends AppCompatActivity {
                     LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
                     friends = user.getFriends();
                 }
-                if(friends == null){
+                if (friends == null) {
                     initializeFirstFriend(email, justCheck);
-                }
-                else{
+                } else {
 
                     addFriend(email, justCheck);
                 }
@@ -141,7 +138,34 @@ public class FindFriendActivity extends AppCompatActivity {
         });
     }
 
-    public void addFriend(final String email, final boolean justCheck){
+    public void updateFriendRequestStatus(final String email){
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("FriendRequest");
+
+        final Query updateRequestQuery = ref.orderByChild("friendRequestSender").equalTo(email);
+
+        updateRequestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for(DataSnapshot data : dataSnapshot.getChildren()){
+                    FriendRequest friendRequest = data.getValue(FriendRequest.class);
+
+                    if(friendRequest.getFriendRequestSender().equalsIgnoreCase(email) && friendRequest.getFriendRequestReceiver().equalsIgnoreCase(FirebaseAuth.getInstance()
+                            .getCurrentUser()
+                            .getEmail())){
+                            data.getRef().child("accepted").setValue(true);
+                            data.getRef().child("answered").setValue(true);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void addFriend(final String email, final boolean justCheck) {
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
         final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
                 .getCurrentUser()
@@ -160,7 +184,7 @@ public class FindFriendActivity extends AppCompatActivity {
 
                     friendsArrayList = user.getFriends();
 
-                    if(friendsArrayList != null) {
+                    if (friendsArrayList != null) {
                         for (String friendName : friendsArrayList) {
                             if (friendName.equalsIgnoreCase(email)) {
                                 alreadyFriend = true;
@@ -168,7 +192,7 @@ public class FindFriendActivity extends AppCompatActivity {
                         }
                     }
 
-                    if(alreadyFriend){
+                    if (alreadyFriend) {
                         showFriendEmail.setText(email + "\n (Already Friend)");
                         findFriendBtn.setText("Find Another Friend");
                         findFriendBtn.setOnClickListener(new View.OnClickListener() {
@@ -179,14 +203,18 @@ public class FindFriendActivity extends AppCompatActivity {
                                 startActivity(intent);
                             }
                         });
-                    }
-                    else{
-                        if(friendsArrayList != null){
+                    } else {
+                        if (friendsArrayList != null) {
                             friendsArrayList.add(email);
-                            if(!justCheck) {
+                            if (!justCheck) {
                                 appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
                                 showFriendEmail.setText(email + "\n (Already Friend)");
                                 findFriendBtn.setText("Find Another Friend");
+
+                                updateFriendRequest(email, ref);
+                                updateFriendRequestStatus(email);
+
+
                                 findFriendBtn.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View view) {
@@ -219,10 +247,84 @@ public class FindFriendActivity extends AppCompatActivity {
         });
     }
 
+    public void updateFriendRequest(final String email, DatabaseReference ref){
+        final Query checkFriendsQuery = ref.orderByChild("userEmail").equalTo(email);
+
+        final boolean[] alreadyFriend_ = new boolean[1];
+
+
+        checkFriendsQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                    LastLoginUser user = data.getValue(LastLoginUser.class);
+                    if(user.getFriends() != null) {
+                        for (String loginUser : user.getFriends()) {
+                            if (loginUser.equalsIgnoreCase(FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail())) {
+                                alreadyFriend_[0] = true;
+                            }
+                        }
+                    }
+                }
+                if (!alreadyFriend_[0]) {
+
+
+                    final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("FriendRequest");
+
+                    Query findFriendRequest = ref.orderByChild("friendRequestReceiver").equalTo(email);
+
+                    findFriendRequest.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            FriendRequest friendRequest = new FriendRequest(email, FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail());
+
+                            for (DataSnapshot data : dataSnapshot.getChildren()) {
+                                FriendRequest friendRequestData = data.getValue(FriendRequest.class);
+
+                                if (data.getChildrenCount() > 0) {
+                                    if (friendRequestData.getFriendRequestSender().equalsIgnoreCase(FirebaseAuth.getInstance()
+                                            .getCurrentUser()
+                                            .getEmail()) && friendRequestData.getRequestTime() != friendRequest.getRequestTime()) {
+                                        data.getRef().removeValue();
+                                    }
+                                }
+                            }
+                            String objId = ref.push().getKey();
+
+                            ref.child(objId).setValue(friendRequest);
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+
+                }
+
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+    }
+
     public void initializeFirstFriend(final String email, final boolean justCheck) {
 
         final ArrayList<String> friends = new ArrayList<>();
         friends.add(email);
+
+        final ArrayList<String> toCheckFriends = new ArrayList<>();
+
 
         user = new LastLoginUser(
                 FirebaseAuth.getInstance()
@@ -240,7 +342,7 @@ public class FindFriendActivity extends AppCompatActivity {
 
         final String[] userId = {null};
 
-        if(!justCheck) {
+        if (!justCheck) {
             applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
@@ -250,6 +352,9 @@ public class FindFriendActivity extends AppCompatActivity {
                     mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
 
                     mDatabase.child(userId[0]).child("friends").setValue(friends);
+
+                    updateFriendRequest(email,ref);
+                    updateFriendRequestStatus(email);
 
                     showFriendEmail.setText(email + "\n (Already Friend)");
                     findFriendBtn.setText("Find Another Friend");
@@ -271,10 +376,15 @@ public class FindFriendActivity extends AppCompatActivity {
 
             });
         }
+    }
 
+    @Override
+    public void onBackPressed() {
 
-
-
+        Intent i = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        finish();
+        startActivity(i);
 
     }
 

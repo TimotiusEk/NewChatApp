@@ -15,6 +15,16 @@ public class LastLoginUser implements Comparable<LastLoginUser> {
     private long lastMessageTime;
     private int unreadMessage;
     private ArrayList<String> friends;
+    private boolean isLastMessagePicture;
+
+
+    public boolean isLastMessagePicture() {
+        return isLastMessagePicture;
+    }
+
+    public void setLastMessagePicture(boolean lastMessagePicture) {
+        isLastMessagePicture = lastMessagePicture;
+    }
 
     public ArrayList<String> getFriends() {
         return friends;

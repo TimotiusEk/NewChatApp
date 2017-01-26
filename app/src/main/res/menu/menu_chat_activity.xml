@@ -1,19 +1,16 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-
+    <item android:title="Upload Photo" app:showAsAction="never"
+        android:id="@+id/menu_upload_photo"/>
 
     <item android:title="Show Friends" app:showAsAction="never"
         android:id="@+id/menu_show_friends"/>
 
     <item android:title="Find Friends" app:showAsAction="never"
-    android:id="@+id/menu_find_friends"/>
-
-    <item android:title="Friend Request" app:showAsAction="never"
-        android:id="@+id/menu_friend_request"/>
+        android:id="@+id/menu_find_friends"/>
 
     <item android:title="Sign out" app:showAsAction="never"
-        android:id="@+id/menu_sign_out"
-        />
+        android:id="@+id/menu_sign_out"/>
 
 </menu>

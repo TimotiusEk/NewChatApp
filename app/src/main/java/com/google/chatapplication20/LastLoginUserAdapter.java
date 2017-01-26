@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -18,9 +20,11 @@ import java.util.List;
  */
 
 public class LastLoginUserAdapter extends ArrayAdapter<LastLoginUser> {
+    private String currentUserEmail;
 
-    public LastLoginUserAdapter(Context context, int resource, ArrayList<LastLoginUser> items) {
+    public LastLoginUserAdapter(Context context, int resource, ArrayList<LastLoginUser> items, String currentUserEmail) {
         super(context, resource, items);
+        this.currentUserEmail = currentUserEmail;
     }
 
     @Override
@@ -49,49 +53,55 @@ public class LastLoginUserAdapter extends ArrayAdapter<LastLoginUser> {
             }
 
 
-            if(p.getLastMessageTime() != 0) {
-                tt3.setText(p.getLastMessage());
+            if (p.isLastMessagePicture()) {
+                tt3.setText("Picture File");
 
-                long messageTime = new Date().getTime();
-
-                String messageDate = (String) DateFormat.format("dd-MM-yyyy",
-                        p.getLastMessageTime());
-
-                String currentDate = (String) DateFormat.format("dd-MM-yyyy",
-                        messageTime);
-
-                int todayDate = Integer.parseInt(currentDate.substring(0,2));
-                int todayMonth = Integer.parseInt(currentDate.substring(3,5));
-                int todayYear = Integer.parseInt(currentDate.substring(6));
-
-                int msgDate = Integer.parseInt(messageDate.substring(0,2));
-                int msgMonth = Integer.parseInt(messageDate.substring(3,5));
-                int msgYear = Integer.parseInt(messageDate.substring(6));
-
-                if(messageDate.equalsIgnoreCase(currentDate)) {
-                    tt4.setText(DateFormat.format("HH:mm",
-                            p.getLastMessageTime()));
-                }
-                else if(todayMonth == msgMonth && todayYear == msgYear && todayDate -1 == msgDate){
-                    tt4.setText("Yesterday");
-                }
-                else{
-                    tt4.setText(DateFormat.format("dd-MM-yyyy (HH:mm)",
-                            p.getLastMessageTime()));
-                }
+            } else {
+                tt3.setText(p.getLastMessage().trim());
             }
 
-            if(p.getUnreadMessage() != 0){
-                tt5.setVisibility(View.VISIBLE);
-                tt5.setText(String.valueOf(p.getUnreadMessage()));
-            }
-            else{
-                tt5.setVisibility(View.INVISIBLE);
-            }
 
+        long messageTime = new Date().getTime();
+
+        String messageDate = (String) DateFormat.format("dd-MM-yyyy",
+                p.getLastMessageTime());
+
+        String currentDate = (String) DateFormat.format("dd-MM-yyyy",
+                messageTime);
+
+        int todayDate = Integer.parseInt(currentDate.substring(0, 2));
+        int todayMonth = Integer.parseInt(currentDate.substring(3, 5));
+        int todayYear = Integer.parseInt(currentDate.substring(6));
+
+        int msgDate = Integer.parseInt(messageDate.substring(0, 2));
+        int msgMonth = Integer.parseInt(messageDate.substring(3, 5));
+        int msgYear = Integer.parseInt(messageDate.substring(6));
+
+        if (messageDate.equalsIgnoreCase(currentDate)) {
+            tt4.setText(DateFormat.format("HH:mm",
+                    p.getLastMessageTime()));
+        } else if (todayMonth == msgMonth && todayYear == msgYear && todayDate - 1 == msgDate) {
+            tt4.setText("Yesterday");
+        } else {
+            tt4.setText(DateFormat.format("dd-MM-yyyy (HH:mm)",
+                    p.getLastMessageTime()));
         }
 
 
-        return v;
+        if (p.getUnreadMessage() != 0) {
+            tt5.setVisibility(View.VISIBLE);
+
+
+            tt5.setText(String.valueOf(p.getUnreadMessage()));
+
+
+        } else {
+            tt5.setVisibility(View.INVISIBLE);
+        }
+
     }
+
+
+    return v;
+}
 }

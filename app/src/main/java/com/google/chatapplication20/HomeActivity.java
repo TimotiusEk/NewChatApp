@@ -34,11 +34,22 @@ public class HomeActivity extends AppCompatActivity {
     private DatabaseReference mDatabaseUser;
     private TextView showNoChat;
     private FloatingActionButton fabNewChat;
+    private int countFriendRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+        Intent intent = getIntent();
+        String goToFriendRequest = intent.getStringExtra("goToFriendRequest");
+
+
+        if(goToFriendRequest != null){
+            Log.d("goToFriendRequest", goToFriendRequest);
+            Intent i = new Intent(this, FriendRequestActivity.class);
+            startActivity(i);
+        }
+
 
         android.support.v7.app.ActionBar ab = getSupportActionBar();
         ab.setTitle("Chat List");
@@ -57,6 +68,7 @@ public class HomeActivity extends AppCompatActivity {
             );
         } else {
             updateRecentUser();
+            invalidateOptionsMenu();
 
         }
         fabNewChat.setOnClickListener(new View.OnClickListener() {
@@ -116,6 +128,9 @@ public class HomeActivity extends AppCompatActivity {
                 .getEmail());
 
 
+        /**
+         * Listener for Single Value Event bisa dipake jg buat ngecek datanya ada atau ga.
+         */
         applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -140,7 +155,7 @@ public class HomeActivity extends AppCompatActivity {
                             for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
                                 ArrayList<String> friends = null;
                                 for (DataSnapshot data : dataSnapshot.getChildren()) {
-                                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
+                                    LastLoginUser user = data.getValue(LastLoginUser.class);
                                     friends = user.getFriends();
                                 }
                                 if (friends == null) {
@@ -279,7 +294,9 @@ public class HomeActivity extends AppCompatActivity {
 
                         for (DataSnapshot messageSnapshot : dataSnapshot.getChildren()) {
                             ChatMessage chatMessage = messageSnapshot.getValue(ChatMessage.class);
-                            chatMessageArrayList.add(chatMessage);
+                            if(chatMessage.getMessageTime() != 0) {
+                                chatMessageArrayList.add(chatMessage);
+                            }
                         }
 
 
@@ -300,8 +317,7 @@ public class HomeActivity extends AppCompatActivity {
                                     if (loginUsersFriend.get(b).getLastMessageTime() == 0 || loginUsersFriend.get(b).getLastMessageTime() < chatMessageArrayList.get(a).getMessageTime()) {
                                         loginUsersFriend.get(b).setLastMessage(chatMessageArrayList.get(a).getMessageText());
                                         loginUsersFriend.get(b).setLastMessageTime(chatMessageArrayList.get(a).getMessageTime());
-
-
+                                        loginUsersFriend.get(b).setLastMessagePicture(chatMessageArrayList.get(a).isPicture());
                                     }
 
 
@@ -314,11 +330,7 @@ public class HomeActivity extends AppCompatActivity {
                         }
 
 
-                        for(int a = 0 ; a < loginUsersFriend.size() ; a++){
-                            if(loginUsersFriend.get(a).getLastMessageTime() == 0){
-                                loginUsersFriend.remove(a);
-                            }
-                        }
+
                         final ListView listOfMessages = (ListView) findViewById(R.id.list_of_users_and_messages);
 
 
@@ -335,11 +347,27 @@ public class HomeActivity extends AppCompatActivity {
                             }
                         });
 
+                        Log.d("friendSizeBfr", String.valueOf(loginUsersFriend.size()));
+                        for(int a = 0 ; a < loginUsersFriend.size() ; a++){
+                            if(loginUsersFriend.get(a).getLastMessageTime() == 0){
+                                loginUsersFriend.remove(a);
+                            }
+                        }
+                        Log.d("friendSizeAfr", String.valueOf(loginUsersFriend.size()));
+
+                        for(int a = 0 ; a < loginUsersFriend.size() ; a++){
+                            if(loginUsersFriend.get(a).getLastMessageTime() == 0 ){
+                                loginUsersFriend.remove(a);
+                            }
+                        }
+                        Log.d("friendSizeAfr2", String.valueOf(loginUsersFriend.size()));
                         if (loginUsersFriend.size() != 0) {
                             listOfMessages.setVisibility(View.VISIBLE);
                             showNoChat.setVisibility(View.GONE);
                             Collections.sort(loginUsersFriend, LastLoginUser.RecentChatComparator);
-                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUsersFriend);
+                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUsersFriend, FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail());
                             listOfMessages.setAdapter(customAdapter);
                             customAdapter.notifyDataSetChanged();
                         }
@@ -393,6 +421,9 @@ public class HomeActivity extends AppCompatActivity {
         } else if (item.getItemId() == R.id.menu_find_friends) {
             Intent intent = new Intent(this, FindFriendActivity.class);
             startActivity(intent);
+        } else if (item.getItemId() == R.id.menu_friend_request) {
+            Intent intent = new Intent(this, FriendRequestActivity.class);
+            startActivity(intent);
         }
         return true;
     }
@@ -400,6 +431,37 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        final MenuItem menuItem = menu.getItem(2);
+        mDatabase = FirebaseDatabase.getInstance().getReference("FriendRequest");
+        if(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                 != null) {
+            Query friendRequestQuery = mDatabase.orderByChild("friendRequestReceiver").equalTo(FirebaseAuth.getInstance()
+                    .getCurrentUser()
+                    .getEmail());
+
+
+            friendRequestQuery.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    String defaultValue = "Friend Request";
+                    for (DataSnapshot data : dataSnapshot.getChildren()) {
+                        FriendRequest friendRequest = data.getValue(FriendRequest.class);
+                        if (!friendRequest.isAnswered()) {
+                            countFriendRequest++;
+                        }
+                    }
+                    if (countFriendRequest != 0) {
+                        menuItem.setTitle(defaultValue + " (" + countFriendRequest + ") ");
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+        }
         return true;
     }
 
@@ -412,6 +474,7 @@ public class HomeActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
 
                 updateRecentUser();
+                invalidateOptionsMenu();
 
                 Toast.makeText(this,
                         "Successfully signed in. Welcome!",

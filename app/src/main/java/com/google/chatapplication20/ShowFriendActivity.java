@@ -192,4 +192,14 @@ public class ShowFriendActivity extends AppCompatActivity {
             }
         });
     }
+
+    @Override
+    public void onBackPressed() {
+
+        Intent i = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        finish();
+        startActivity(i);
+
+    }
 }
