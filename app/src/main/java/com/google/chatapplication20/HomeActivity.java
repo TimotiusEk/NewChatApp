@@ -301,23 +301,23 @@ public class HomeActivity extends AppCompatActivity {
 
 
                         for (int a = 0; a < chatMessageArrayList.size(); a++) {
-                            for (int b = 0; b < loginUsersFriend.size(); b++) {
-                                if ((chatMessageArrayList.get(a).getMessageSender().equalsIgnoreCase(loginUsersFriend.get(b).getUserEmail()) && chatMessageArrayList.get(a).getMessageReceiver().equalsIgnoreCase(FirebaseAuth.getInstance()
+                            for (int b = 0; b < loginUserArrayList.size(); b++) {
+                                if ((chatMessageArrayList.get(a).getMessageSender().equalsIgnoreCase(loginUserArrayList.get(b).getUserEmail()) && chatMessageArrayList.get(a).getMessageReceiver().equalsIgnoreCase(FirebaseAuth.getInstance()
                                         .getCurrentUser()
                                         .getEmail())) || (chatMessageArrayList.get(a).getMessageSender().equalsIgnoreCase(FirebaseAuth.getInstance()
                                         .getCurrentUser()
-                                        .getEmail()) && chatMessageArrayList.get(a).getMessageReceiver().equalsIgnoreCase(loginUsersFriend.get(b).getUserEmail()))) { //Mau nangkep data message yg receiver dan sender nya diri kita sendiri
+                                        .getEmail()) && chatMessageArrayList.get(a).getMessageReceiver().equalsIgnoreCase(loginUserArrayList.get(b).getUserEmail()))) { //Mau nangkep data message yg receiver dan sender nya diri kita sendiri
 
-                                    if (!chatMessageArrayList.get(a).isMessageRead() && chatMessageArrayList.get(a).getMessageSender().equalsIgnoreCase(loginUsersFriend.get(b).getUserEmail())) {
-                                        loginUsersFriend.get(b).setUnreadMessage(loginUsersFriend.get(b).getUnreadMessage() + 1);
+                                    if (!chatMessageArrayList.get(a).isMessageRead() && chatMessageArrayList.get(a).getMessageSender().equalsIgnoreCase(loginUserArrayList.get(b).getUserEmail())) {
+                                        loginUserArrayList.get(b).setUnreadMessage(loginUserArrayList.get(b).getUnreadMessage() + 1);
 
                                     }
 
 
-                                    if (loginUsersFriend.get(b).getLastMessageTime() == 0 || loginUsersFriend.get(b).getLastMessageTime() < chatMessageArrayList.get(a).getMessageTime()) {
-                                        loginUsersFriend.get(b).setLastMessage(chatMessageArrayList.get(a).getMessageText());
-                                        loginUsersFriend.get(b).setLastMessageTime(chatMessageArrayList.get(a).getMessageTime());
-                                        loginUsersFriend.get(b).setLastMessagePicture(chatMessageArrayList.get(a).isPicture());
+                                    if (loginUserArrayList.get(b).getLastMessageTime() == 0 || loginUserArrayList.get(b).getLastMessageTime() < chatMessageArrayList.get(a).getMessageTime()) {
+                                        loginUserArrayList.get(b).setLastMessage(chatMessageArrayList.get(a).getMessageText());
+                                        loginUserArrayList.get(b).setLastMessageTime(chatMessageArrayList.get(a).getMessageTime());
+                                        loginUserArrayList.get(b).setLastMessagePicture(chatMessageArrayList.get(a).isPicture());
                                     }
 
 
@@ -348,9 +348,9 @@ public class HomeActivity extends AppCompatActivity {
                         });
 
                         Log.d("friendSizeBfr", String.valueOf(loginUsersFriend.size()));
-                        for(int a = 0 ; a < loginUsersFriend.size() ; a++){
-                            if(loginUsersFriend.get(a).getLastMessageTime() == 0){
-                                loginUsersFriend.remove(a);
+                        for(int a = 0 ; a < loginUserArrayList.size() ; a++){
+                            if(loginUserArrayList.get(a).getLastMessageTime() == 0){
+                                loginUserArrayList.remove(a);
                             }
                         }
                         Log.d("friendSizeAfr", String.valueOf(loginUsersFriend.size()));
@@ -361,11 +361,11 @@ public class HomeActivity extends AppCompatActivity {
                             }
                         }
                         Log.d("friendSizeAfr2", String.valueOf(loginUsersFriend.size()));
-                        if (loginUsersFriend.size() != 0) {
+                        if (loginUserArrayList.size() != 0) {
                             listOfMessages.setVisibility(View.VISIBLE);
                             showNoChat.setVisibility(View.GONE);
-                            Collections.sort(loginUsersFriend, LastLoginUser.RecentChatComparator);
-                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUsersFriend, FirebaseAuth.getInstance()
+                            Collections.sort(loginUserArrayList, LastLoginUser.RecentChatComparator);
+                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUserArrayList, FirebaseAuth.getInstance()
                                     .getCurrentUser()
                                     .getEmail());
                             listOfMessages.setAdapter(customAdapter);

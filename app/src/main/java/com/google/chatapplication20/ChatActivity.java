@@ -31,8 +31,10 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -85,6 +87,14 @@ public class ChatActivity extends AppCompatActivity {
     private Bitmap bm;
     private ProgressBar downloadImageProgressBar;
     private boolean isPicUploaded = false;
+    private LinearLayout notFriendLayout;
+    private Button addFriendBtn;
+    private Button blockFriendBtn;
+    private RelativeLayout blockedUserLayout;
+    private FloatingActionButton fab;
+    private EditText input;
+    private Button unblockBtn;
+    private TextView showBlockedInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +107,11 @@ public class ChatActivity extends AppCompatActivity {
         sendImgFab = (FloatingActionButton) findViewById(R.id.fab_picture_msg);
         showPictureMsg = (ImageView) findViewById(R.id.picture_message);
         downloadImageProgressBar = (ProgressBar) findViewById(R.id.download_image_progress_bar);
+        notFriendLayout = (LinearLayout) findViewById(R.id.not_friend_button_layout);
+        input = (EditText) findViewById(R.id.input);
+        blockedUserLayout = (RelativeLayout) findViewById(R.id.blocked_user_layout);
+        unblockBtn = (Button) findViewById(R.id.unblock_btn);
+        showBlockedInfo = (TextView) findViewById(R.id.show_blocked_info);
 
         scrollMyListViewToBottom();
 
@@ -108,15 +123,18 @@ public class ChatActivity extends AppCompatActivity {
         android.support.v7.app.ActionBar ab = getSupportActionBar();
         ab.setTitle(chatPartner);
 
+
+        showAddFriendLayout(chatPartner);
+        isItBlocked(chatPartner);
+
         displayChatMessages();
 
-        FloatingActionButton fab =
-                (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
 
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                EditText input = (EditText) findViewById(R.id.input);
+
 
                 // Read the input field and push a new instance
                 // of ChatMessage to the Firebase database
@@ -143,6 +161,479 @@ public class ChatActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    public void isItBlocked(final String email){
+        mDatabase = FirebaseDatabase.getInstance().getReference("BlockedUser");
+        Query isItBlockedQuery = mDatabase.orderByChild("userWhoBlock").equalTo(email);
+
+        isItBlockedQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.getChildrenCount() != 0){
+                    boolean isItBlocked = false;
+                    for(DataSnapshot data : dataSnapshot.getChildren()) {
+                        BlockedUser blockedUser = data.getValue(BlockedUser.class);
+                        for(String emailToCompare : blockedUser.getBlockedUser()) {
+                            if(emailToCompare.equalsIgnoreCase(FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail())){
+                                isItBlocked = true;
+                            }
+                        }
+
+                    }
+
+                    if(isItBlocked){
+                        blockedUserLayout.setVisibility(View.VISIBLE);
+                        notFriendLayout.setVisibility(View.GONE);
+                        input.setEnabled(false);
+                        fab.setEnabled(false);
+                        listOfMessages.setEnabled(false);
+                        showBlockedInfo.setText("You have been blocked by this user");
+                    }
+                }
+
+                if(unblockBtn.getVisibility() == View.GONE){
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void showAddFriendLayout(final String email) {
+        /**
+         * Ngecek FriendStatus
+         */
+        final boolean[] friendStatus = {false};
+        mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+        Query friendListQuery = mDatabase.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+        friendListQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
+
+                    if(user.getFriends() != null) {
+                        for (String emailToCompare : user.getFriends()) {
+                            if (emailToCompare.equalsIgnoreCase(email)) {
+                                friendStatus[0] = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!friendStatus[0]) {
+                    notFriendLayout.setVisibility(View.VISIBLE);
+                    addFriendBtn = (Button) findViewById(R.id.add_friend_btn);
+                    blockFriendBtn = (Button) findViewById(R.id.block_user_btn);
+
+                    addFriendBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            checkThenAddFriend(email);
+                        }
+                    });
+
+                    blockFriendBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            blockUser(email);
+                        }
+                    });
+                }
+                else{
+                    notFriendLayout.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
+        /**
+         * Ngecek BlockedStatus
+         */
+
+        final boolean[] blockedStatus = {false};
+        mDatabase = FirebaseDatabase.getInstance().getReference("BlockedUser");
+        final Query blockedListQuery = mDatabase.orderByChild("userWhoBlock").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+        blockedListQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                    BlockedUser blockedUser = data.getValue(BlockedUser.class);
+
+                    if(blockedUser != null && blockedUser.getBlockedUser() != null){
+                        for(String emailToCompare : blockedUser.getBlockedUser()){
+                            Log.d("emailToCompare", emailToCompare);
+                            if (emailToCompare.equalsIgnoreCase(email)) {
+                                blockedStatus[0] = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!blockedStatus[0]) {
+                    addFriendBtn = (Button) findViewById(R.id.add_friend_btn);
+                    blockFriendBtn = (Button) findViewById(R.id.block_user_btn);
+
+                    addFriendBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            checkThenAddFriend(email);
+                        }
+                    });
+
+                    blockFriendBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            blockUser(email);
+                        }
+                    });
+                }
+                else{
+                    notFriendLayout.setVisibility(View.GONE);
+                    input.setEnabled(false);
+                    fab.setEnabled(false);
+                    listOfMessages.setEnabled(false);
+
+                    blockedUserLayout.setVisibility(View.VISIBLE);
+                    unblockBtn.setVisibility(View.VISIBLE);
+                    unblockBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+
+                            /**
+                             * Todo : buat method unblock
+                             */
+
+                            blockedListQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+
+                                    ArrayList<String> blockedUserAl = null;
+                                    String blockedUserId = "";
+                                    for (DataSnapshot data : dataSnapshot.getChildren()) {
+                                        BlockedUser blockedUser = data.getValue(BlockedUser.class);
+                                        blockedUserAl = blockedUser.getBlockedUser();
+                                        blockedUserId = data.getKey();
+
+                                        if(blockedUserAl != null) {
+                                            for (int a = 0; a < blockedUserAl.size(); a++) {
+                                                if(chatPartner.equalsIgnoreCase(blockedUserAl.get(a))){
+                                                    blockedUserAl.remove(a);
+                                                }
+                                            }
+
+                                            if(blockedUserAl.size() != 0) {
+                                                data.getRef().child("blockedUser").setValue(blockedUserAl);
+                                            }
+                                            else{
+                                               data.getRef().removeValue();
+                                            }
+
+                                            Intent intent = getIntent();
+                                            finish();
+                                            startActivity(intent);
+
+                                        }
+                                    }
+
+
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+
+                                }
+                            });
+                        }
+                    });
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+    }
+
+    public void blockUser(final String email){
+        mDatabase = FirebaseDatabase.getInstance().getReference("BlockedUser");
+        final Query blockedUserQuery = mDatabase.orderByChild("userWhoBlock").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+        final ArrayList<String> blockedUserAl = new ArrayList<>();
+        final String blockedUserId = mDatabase.push().getKey();
+
+        Log.d("blockedId",blockedUserQuery.getRef().getKey());
+
+
+        blockedUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.getChildrenCount() == 0){
+                    Log.d("masuk", "true");
+                    blockedUserAl.add(email);
+
+                    mDatabase.child(blockedUserId).setValue(new BlockedUser(FirebaseAuth.getInstance()
+                            .getCurrentUser()
+                            .getEmail(), blockedUserAl));
+                }
+                else{
+                    for(DataSnapshot data : dataSnapshot.getChildren()){
+                        BlockedUser blockedUser = data.getValue(BlockedUser.class);
+                        final ArrayList<String> blockedUserAl = blockedUser.getBlockedUser();
+                        if(blockedUserAl != null) {
+                            blockedUserAl.add(email);
+                            mDatabase.child(data.getKey()).child("blockedUser").setValue(blockedUserAl);
+                        }
+
+                    }
+                }
+
+                notFriendLayout.setVisibility(View.GONE);
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void checkThenAddFriend(final String email) {
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+
+        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+        applesQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                ArrayList<String> friends = null;
+                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
+                    friends = user.getFriends();
+                }
+                if (friends == null) {
+                    initializeFirstFriend(email);
+                } else {
+                    addFriend(email);
+                }
+
+                applesQuery.removeEventListener(this);
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void initializeFirstFriend(final String email) {
+
+        final ArrayList<String> friends = new ArrayList<>();
+        friends.add(email);
+
+        final ArrayList<String> toCheckFriends = new ArrayList<>();
+
+
+        LastLoginUser user = new LastLoginUser(
+                FirebaseAuth.getInstance()
+                        .getCurrentUser()
+                        .getEmail(), friends);
+
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+        final String[] userId = {null};
+
+        applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+                    userId[0] = appleSnapshot.getKey();
+                }
+                mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+
+                mDatabase.child(userId[0]).child("friends").setValue(friends);
+
+                updateFriendRequest(email, ref);
+                updateFriendRequestStatus(email);
+
+                applesQuery.removeEventListener(this);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+        });
+
+    }
+
+    public void updateFriendRequest(final String email, DatabaseReference ref) {
+        final Query checkFriendsQuery = ref.orderByChild("userEmail").equalTo(email);
+
+        final boolean[] alreadyFriend_ = new boolean[1];
+
+
+        checkFriendsQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                    LastLoginUser user = data.getValue(LastLoginUser.class);
+                    if (user.getFriends() != null) {
+                        for (String loginUser : user.getFriends()) {
+                            if (loginUser.equalsIgnoreCase(FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail())) {
+                                alreadyFriend_[0] = true;
+                            }
+                        }
+                    }
+                }
+                if (!alreadyFriend_[0]) {
+
+
+                    final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("FriendRequest");
+
+                    Query findFriendRequest = ref.orderByChild("friendRequestReceiver").equalTo(email);
+
+                    findFriendRequest.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            FriendRequest friendRequest = new FriendRequest(email, FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail());
+
+                            for (DataSnapshot data : dataSnapshot.getChildren()) {
+                                FriendRequest friendRequestData = data.getValue(FriendRequest.class);
+
+                                if (data.getChildrenCount() > 0) {
+                                    if (friendRequestData.getFriendRequestSender().equalsIgnoreCase(FirebaseAuth.getInstance()
+                                            .getCurrentUser()
+                                            .getEmail()) && friendRequestData.getRequestTime() != friendRequest.getRequestTime()) {
+                                        data.getRef().removeValue();
+                                    }
+                                }
+                            }
+                            String objId = ref.push().getKey();
+
+                            ref.child(objId).setValue(friendRequest);
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+
+                }
+
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+    }
+
+    public void addFriend(final String email) {
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+        final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+        applesQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                ArrayList<String> friendsArrayList;
+
+
+                for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
+
+                    LastLoginUser user = appleSnapshot.getValue(LastLoginUser.class);
+
+                    friendsArrayList = user.getFriends();
+
+                    if (friendsArrayList != null) {
+                        friendsArrayList.add(email);
+
+                        appleSnapshot.getRef().child("friends").setValue(friendsArrayList);
+
+                        updateFriendRequest(email, ref);
+                        updateFriendRequestStatus(email);
+
+                    }
+
+                }
+                applesQuery.removeEventListener(this);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+        });
+    }
+
+    public void updateFriendRequestStatus(final String email) {
+        final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("FriendRequest");
+
+        final Query updateRequestQuery = ref.orderByChild("friendRequestSender").equalTo(email);
+
+        updateRequestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot data : dataSnapshot.getChildren()) {
+                    FriendRequest friendRequest = data.getValue(FriendRequest.class);
+
+                    if (friendRequest.getFriendRequestSender().equalsIgnoreCase(email) && friendRequest.getFriendRequestReceiver().equalsIgnoreCase(FirebaseAuth.getInstance()
+                            .getCurrentUser()
+                            .getEmail())) {
+                        data.getRef().child("accepted").setValue(true);
+                        data.getRef().child("answered").setValue(true);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     private void scrollMyListViewToBottom() {
@@ -341,8 +832,8 @@ public class ChatActivity extends AppCompatActivity {
                                     Toast.LENGTH_LONG)
                                     .show();
 
-                            // Close activity
-                            finish();
+                            // Close Application
+                            finishAffinity();
                         }
                     });
         } else if (item.getItemId() == R.id.menu_show_friends) {
@@ -352,8 +843,12 @@ public class ChatActivity extends AppCompatActivity {
             Intent intent = new Intent(this, FindFriendActivity.class);
             startActivity(intent);
         } else if (item.getItemId() == R.id.menu_upload_photo) {
-
-            uploadPhoto();
+            if(blockedUserLayout.getVisibility() == View.VISIBLE){
+                Toast.makeText(this, "Unblock to Send Picture", Toast.LENGTH_SHORT).show();
+            }
+            else {
+                uploadPhoto();
+            }
         } else if (item.getItemId() == R.id.menu_save_photo) {
             isStoragePermissionGranted();
 
