@@ -1,16 +1,19 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.activity;
 
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.FriendRequest;
+import com.google.chatapplication20.model.LastLoginUser;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -37,7 +40,21 @@ public class FindFriendActivity extends AppCompatActivity {
         setContentView(R.layout.activity_find_friend);
 
         android.support.v7.app.ActionBar ab = getSupportActionBar();
-        ab.setTitle("Find & Add Friend");
+        ab.setTitle(R.string.find_and_add_friend);
+
+
+
+//        final int abTitleId = getResources().getIdentifier("action_bar_title", "id", "android");
+//
+//        findViewById(abTitleId).setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(FindFriendActivity.this, "Action Bar Clicked", Toast.LENGTH_SHORT).show();//Do something
+//            }
+//        });
+
+
 
         findFriendBtn = (Button) findViewById(R.id.find_friend_btn);
 

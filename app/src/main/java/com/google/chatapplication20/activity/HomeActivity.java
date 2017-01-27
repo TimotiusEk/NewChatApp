@@ -1,4 +1,4 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.activity;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -17,6 +17,12 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.chatapplication20.adapter.LastLoginUserAdapter;
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.ChatMessage;
+import com.google.chatapplication20.model.FriendRequest;
+import com.google.chatapplication20.model.GroupChat;
+import com.google.chatapplication20.model.LastLoginUser;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -31,9 +37,8 @@ public class HomeActivity extends AppCompatActivity {
     private static final int SIGN_IN_REQUEST_CODE = 10;
     private LastLoginUser user;
     private DatabaseReference mDatabase;
-    private DatabaseReference mDatabaseUser;
+    private DatabaseReference mDatabaseGroup;
     private TextView showNoChat;
-    private FloatingActionButton fabNewChat;
     private int countFriendRequest;
 
     @Override
@@ -55,7 +60,7 @@ public class HomeActivity extends AppCompatActivity {
         ab.setTitle("Chat List");
 
         showNoChat = (TextView) findViewById(R.id.show_no_chat);
-        fabNewChat = (FloatingActionButton) findViewById(R.id.fab_new_chat);
+        FloatingActionButton fabNewChat = (FloatingActionButton) findViewById(R.id.fab_new_chat);
 
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
@@ -118,10 +123,6 @@ public class HomeActivity extends AppCompatActivity {
 
     public void updateRecentUser() {
 
-
-        /*
-         * Todo : bikin method buat masukin data ke login ke db
-         */
         final DatabaseReference ref = FirebaseDatabase.getInstance().getReference("LastLoginUser");
         final Query applesQuery = ref.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
                 .getCurrentUser()
@@ -196,9 +197,7 @@ public class HomeActivity extends AppCompatActivity {
                             for (DataSnapshot appleSnapshot : dataSnapshot.getChildren()) {
                                 if (user.getUserLastLoginTime() > (long) appleSnapshot.child("userLastLoginTime").getValue()) {
                                     appleSnapshot.getRef().removeValue();
-
                                 }
-
                             }
 //                ref.removeEventListener(this);
                         }
@@ -231,7 +230,7 @@ public class HomeActivity extends AppCompatActivity {
 
 
     public void getRecentMessage() {
-        mDatabaseUser = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+        DatabaseReference mDatabaseUser = FirebaseDatabase.getInstance().getReference("LastLoginUser");
         Log.d("mDatabaseUser", String.valueOf(mDatabaseUser.getRef()));
         mDatabaseUser.addValueEventListener(new ValueEventListener() {
             @Override
@@ -339,42 +338,67 @@ public class HomeActivity extends AppCompatActivity {
                             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
                                 LastLoginUser user = (LastLoginUser) listOfMessages.getItemAtPosition(i);
+
                                 Intent mIntent = new Intent(HomeActivity.this, ChatActivity.class);
                                 Bundle mBundle = new Bundle();
                                 mBundle.putString("email", user.getUserEmail());
+                                if(user.getUserEmail().length()>=6) {
+                                    if(user.getUserEmail().substring(user.getUserEmail().length() - 6, user.getUserEmail().length() - 1).equalsIgnoreCase("Group")) {
+                                        mBundle.putBoolean("isGroup", true);
+                                    }
+                                    else{
+                                        mBundle.putBoolean("isGroup", false);
+                                    }
+                                }
                                 mIntent.putExtras(mBundle);
                                 startActivity(mIntent);
                             }
                         });
 
-                        Log.d("friendSizeBfr", String.valueOf(loginUsersFriend.size()));
+
                         for(int a = 0 ; a < loginUserArrayList.size() ; a++){
                             if(loginUserArrayList.get(a).getLastMessageTime() == 0){
                                 loginUserArrayList.remove(a);
                             }
                         }
-                        Log.d("friendSizeAfr", String.valueOf(loginUsersFriend.size()));
 
-                        for(int a = 0 ; a < loginUsersFriend.size() ; a++){
-                            if(loginUsersFriend.get(a).getLastMessageTime() == 0 ){
-                                loginUsersFriend.remove(a);
+
+
+
+                      mDatabaseGroup = FirebaseDatabase.getInstance().getReference("GroupChat");
+                        mDatabaseGroup.addValueEventListener(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                for(DataSnapshot data : dataSnapshot.getChildren()){
+                                    GroupChat groupChat = data.getValue(GroupChat.class);
+                                    loginUserArrayList.add(new LastLoginUser(groupChat.getGroupChatName() + " (Group)"));
+                                }
+
+
+                                if (loginUserArrayList.size() != 0) {
+                                    listOfMessages.setVisibility(View.VISIBLE);
+                                    showNoChat.setVisibility(View.GONE);
+                                    Collections.sort(loginUserArrayList, LastLoginUser.RecentChatComparator);
+                                    final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUserArrayList, FirebaseAuth.getInstance()
+                                            .getCurrentUser()
+                                            .getEmail());
+                                    listOfMessages.setAdapter(customAdapter);
+                                    customAdapter.notifyDataSetChanged();
+                                }
+                                else{
+                                    listOfMessages.setVisibility(View.GONE);
+                                    showNoChat.setVisibility(View.VISIBLE);
+                                }
+
                             }
-                        }
-                        Log.d("friendSizeAfr2", String.valueOf(loginUsersFriend.size()));
-                        if (loginUserArrayList.size() != 0) {
-                            listOfMessages.setVisibility(View.VISIBLE);
-                            showNoChat.setVisibility(View.GONE);
-                            Collections.sort(loginUserArrayList, LastLoginUser.RecentChatComparator);
-                            final LastLoginUserAdapter customAdapter = new LastLoginUserAdapter(HomeActivity.this, R.layout.last_login, loginUserArrayList, FirebaseAuth.getInstance()
-                                    .getCurrentUser()
-                                    .getEmail());
-                            listOfMessages.setAdapter(customAdapter);
-                            customAdapter.notifyDataSetChanged();
-                        }
-                        else{
-                            listOfMessages.setVisibility(View.GONE);
-                            showNoChat.setVisibility(View.VISIBLE);
-                        }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+
+
 
 
                     }

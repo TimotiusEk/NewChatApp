@@ -1,11 +1,16 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.activity;
 
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ListView;
+import android.widget.TextView;
 
+import com.google.chatapplication20.adapter.FriendRequestAdapter;
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.FriendRequest;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -13,6 +18,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
 
 import java.util.ArrayList;
 
@@ -22,12 +28,18 @@ public class FriendRequestActivity extends AppCompatActivity {
     private DatabaseReference mDatabase;
     private Query friendRequestQuery;
     private ArrayList<FriendRequest> friendRequestArrayList;
+    private TextView showNoFriendRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_friend_request);
+
+        android.support.v7.app.ActionBar ab = getSupportActionBar();
+        ab.setTitle("Friend Request");
+
         friendRequestLv = (ListView) findViewById(R.id.friend_request_lv);
+        showNoFriendRequest = (TextView) findViewById(R.id.show_no_friend_request);
         friendRequestArrayList = new ArrayList<>();
         populateView();
     }
@@ -48,6 +60,10 @@ public class FriendRequestActivity extends AppCompatActivity {
                     }
                 }
 
+                if(friendRequestArrayList.size() == 0){
+                    friendRequestLv.setVisibility(View.GONE);
+                    showNoFriendRequest.setVisibility(View.VISIBLE);
+                }
                 Log.d("friendRequestArrayListSize", String.valueOf(friendRequestArrayList.size()));
 
                 for(int a = 0 ; a < friendRequestArrayList.size(); a++){

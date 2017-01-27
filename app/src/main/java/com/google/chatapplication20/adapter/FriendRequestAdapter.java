@@ -1,8 +1,6 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.adapter;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +9,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.FriendRequest;
+import com.google.chatapplication20.model.LastLoginUser;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

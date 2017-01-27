@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Chat Application 2.0</string>
+    <string name="find_and_add_friend"><![CDATA[Find & Add Friend]]></string>
 </resources>

@@ -1,6 +1,4 @@
-package com.google.chatapplication20;
-
-import android.graphics.Bitmap;
+package com.google.chatapplication20.model;
 
 import java.io.File;
 import java.util.Comparator;
@@ -82,6 +80,13 @@ public class ChatMessage implements Comparable<ChatMessage>{
     public ChatMessage(String messageText, String messageReceiver, String messageSender, boolean isPicture) {
         this.messageText = messageText;
         this.messageReceiver = messageReceiver;
+        this.messageSender = messageSender;
+        messageTime = new Date().getTime();
+        this.isPicture = isPicture;
+    }
+
+    public ChatMessage(String messageText, String messageSender, boolean isPicture) {
+        this.messageText = messageText;
         this.messageSender = messageSender;
         messageTime = new Date().getTime();
         this.isPicture = isPicture;

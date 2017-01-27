@@ -1,11 +1,10 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.adapter;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.format.DateFormat;
 import android.util.Base64;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,13 +13,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.activity.ChatActivity;
+import com.google.chatapplication20.model.ChatMessage;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-
-import static com.facebook.FacebookSdk.getApplicationContext;
 
 /**
  * Created by TimotiusEk on 1/18/2017.

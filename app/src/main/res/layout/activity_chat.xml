@@ -5,8 +5,7 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#d0ede7"
-    tools:context="com.google.chatapplication20.ChatActivity">
+    tools:context="com.google.chatapplication20.activity.ChatActivity">
 
     <LinearLayout
         android:id="@+id/not_friend_button_layout"
@@ -66,9 +65,7 @@
             android:layout_alignParentEnd="true"
             android:clickable="true"
             android:src="@drawable/ic_send_black_24dp"
-            android:tint="@android:color/white"
             app:fabSize="mini"
-
             />
 
 
@@ -80,7 +77,6 @@
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
             android:layout_marginBottom="16dp"
-            android:background="#d0ede7"
             android:divider="@android:color/transparent"
             android:dividerHeight="16dp" />
 

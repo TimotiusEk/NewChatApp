@@ -1,19 +1,18 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.adapter;
 
 import android.content.Context;
 import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.LastLoginUser;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 /**
  * Created by TimotiusEk on 1/17/2017.
@@ -56,7 +55,7 @@ public class LastLoginUserAdapter extends ArrayAdapter<LastLoginUser> {
             if (p.isLastMessagePicture()) {
                 tt3.setText("Picture File");
 
-            } else {
+            } else if(p.getLastMessage() != null){
                 tt3.setText(p.getLastMessage().trim());
             }
 
@@ -82,7 +81,7 @@ public class LastLoginUserAdapter extends ArrayAdapter<LastLoginUser> {
                     p.getLastMessageTime()));
         } else if (todayMonth == msgMonth && todayYear == msgYear && todayDate - 1 == msgDate) {
             tt4.setText("Yesterday");
-        } else {
+        } else if(p.getLastMessageTime() != 0) {
             tt4.setText(DateFormat.format("dd-MM-yyyy (HH:mm)",
                     p.getLastMessageTime()));
         }

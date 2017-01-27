@@ -1,4 +1,4 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.model;
 
 import java.util.Date;
 

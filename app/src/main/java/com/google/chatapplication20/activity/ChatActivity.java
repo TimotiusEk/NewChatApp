@@ -1,11 +1,10 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.activity;
 
-import android.*;
-import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -19,18 +18,18 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -42,11 +41,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
-import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.chatapplication20.adapter.ChatMessageAdapter;
+import com.google.chatapplication20.R;
+import com.google.chatapplication20.model.BlockedUser;
+import com.google.chatapplication20.model.ChatMessage;
+import com.google.chatapplication20.model.FriendRequest;
+import com.google.chatapplication20.model.GroupChat;
+import com.google.chatapplication20.model.LastLoginUser;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -54,8 +59,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -64,11 +67,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-
-import static android.R.attr.bitmap;
-import static android.R.attr.text;
-import static com.facebook.FacebookSdk.getApplicationContext;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -95,6 +93,8 @@ public class ChatActivity extends AppCompatActivity {
     private EditText input;
     private Button unblockBtn;
     private TextView showBlockedInfo;
+    private boolean isGroup;
+    private String groupName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,15 +119,117 @@ public class ChatActivity extends AppCompatActivity {
 
 
         chatPartner = getIntent().getExtras().getString("email");
+        isGroup = getIntent().getExtras().getBoolean("isGroup");
+        Log.d("isGroup", String.valueOf(isGroup));
 
-        android.support.v7.app.ActionBar ab = getSupportActionBar();
-        ab.setTitle(chatPartner);
 
+        android.support.v7.app.ActionBar actionBar = getSupportActionBar();
+
+
+        actionBar.setDisplayShowTitleEnabled(false);
+        actionBar.setDisplayShowCustomEnabled(true);
+        View customView = getLayoutInflater().inflate(R.layout.actionbar_title, null);
+        // Get the textview of the title
+        final TextView customTitle = (TextView) customView.findViewById(R.id.actionbarTitle);
+        customTitle.setText(chatPartner);
+
+        // Set the on click listener for the title
+        if(isGroup) {
+            groupName = chatPartner.substring(0, chatPartner.length() - 8);
+            notFriendLayout.setVisibility(View.GONE);
+            customTitle.setText(groupName);
+
+            mDatabase = FirebaseDatabase.getInstance().getReference("GroupChat");
+            Query findGroupQuery = mDatabase.orderByChild("groupChatName").equalTo(groupName);
+
+            findGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    int size = 0;
+
+                    for(DataSnapshot data : dataSnapshot.getChildren()){
+                        GroupChat groupChat = data.getValue(GroupChat.class);
+                        for(String email : groupChat.getGroupChatMember()){
+                            size = groupChat.getGroupChatMember().size();
+                        }
+                    }
+                    customTitle.append(" (" + size +")");
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+
+            customTitle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final AlertDialog.Builder builderSingle = new AlertDialog.Builder(ChatActivity.this);
+                    mDatabase = FirebaseDatabase.getInstance().getReference("GroupChat");
+                    Query findGroupQuery = mDatabase.orderByChild("groupChatName").equalTo(groupName);
+
+                    findGroupQuery.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            builderSingle.setTitle("Group Chat Members");
+
+                            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(ChatActivity.this, android.R.layout.simple_list_item_1);
+//                            int size = 0;
+                            for(DataSnapshot data : dataSnapshot.getChildren()){
+                                GroupChat groupChat = data.getValue(GroupChat.class);
+                                for(String email : groupChat.getGroupChatMember()){
+                                    arrayAdapter.add(email);
+//                                    size = groupChat.getGroupChatMember().size();
+                                }
+                            }
+//                            customTitle.append(" (" + size +")");
+
+
+                            builderSingle.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            });
+
+
+                            builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String strName = arrayAdapter.getItem(which);
+                                    AlertDialog.Builder builderInner = new AlertDialog.Builder(ChatActivity.this);
+                                    builderInner.setMessage(strName);
+                                    builderInner.setTitle("Your Selected Item is");
+                                    builderInner.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    });
+                                    builderInner.show();
+                                }
+                            });
+                            builderSingle.show();
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                }
+            });
+        }
+        // Apply the custom view
+        actionBar.setCustomView(customView);
 
         showAddFriendLayout(chatPartner);
         isItBlocked(chatPartner);
 
         displayChatMessages();
+
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -135,30 +237,71 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
+                final String msg = input.getText().toString().trim();
 
                 // Read the input field and push a new instance
                 // of ChatMessage to the Firebase database
-                ChatMessage message = new ChatMessage(input.getText().toString(),
-                        chatPartner
-                        , FirebaseAuth.getInstance()
-                        .getCurrentUser()
-                        .getEmail(), false);
+                if (isGroup) {
+                    mDatabase = FirebaseDatabase.getInstance().getReference("GroupChat");
+                    Query findGroupQuery = mDatabase.orderByChild("groupChatName").equalTo(groupName);
 
-                String msg = input.getText().toString().trim();
+                    findGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            ChatMessage message = new ChatMessage(input.getText().toString()
+                                    , FirebaseAuth.getInstance()
+                                    .getCurrentUser()
+                                    .getEmail(), false);
+                            ArrayList<ChatMessage> messages = new ArrayList<>();
 
-                mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
+                            for(DataSnapshot data : dataSnapshot.getChildren()){
+                                GroupChat groupChat = data.getValue(GroupChat.class);
+                                String groupChatId = data.getKey();
+
+                                if(groupChat.getGroupChatMessages() != null){
+
+                                    messages = groupChat.getGroupChatMessages();
 
 
-                String messageId = mDatabase.push().getKey();
-                if (!msg.matches("")) {
-                    mDatabase.child(messageId).setValue(message);
+                                }
+
+                                messages.add(message);
+                                if (!msg.matches("")) {
+                                    mDatabase.child(groupChatId).child("groupChatMessages").setValue(messages);
+                                    input.setText("");
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                } else {
+                    ChatMessage message = new ChatMessage(input.getText().toString(),
+                            chatPartner
+                            , FirebaseAuth.getInstance()
+                            .getCurrentUser()
+                            .getEmail(), false);
 
 
-                    // Clear the input
-                    input.setText("");
+
+                    mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
+
+
+                    String messageId = mDatabase.push().getKey();
+                    if (!msg.matches("")) {
+                        mDatabase.child(messageId).setValue(message);
+
+                        // Clear the input
+                        input.setText("");
+                    }
                 }
             }
         });
+
 
 
     }
@@ -232,7 +375,9 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 if (!friendStatus[0]) {
-                    notFriendLayout.setVisibility(View.VISIBLE);
+                    if(!isGroup) {
+                        notFriendLayout.setVisibility(View.VISIBLE);
+                    }
                     addFriendBtn = (Button) findViewById(R.id.add_friend_btn);
                     blockFriendBtn = (Button) findViewById(R.id.block_user_btn);
 

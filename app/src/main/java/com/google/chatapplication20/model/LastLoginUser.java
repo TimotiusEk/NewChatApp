@@ -1,4 +1,4 @@
-package com.google.chatapplication20;
+package com.google.chatapplication20.model;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -80,7 +80,7 @@ public class LastLoginUser implements Comparable<LastLoginUser> {
         this.userLastLoginTime = new Date().getTime();
     }
 
-    LastLoginUser() {
+    public LastLoginUser() {
 
     }
 
