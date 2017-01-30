@@ -102,11 +102,7 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
                 try {
                     Bitmap imageBitmap = decodeFromFirebaseBase64(p.getMessageText());
 
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-                    Bitmap decoded = BitmapFactory.decodeStream(new ByteArrayInputStream(out.toByteArray()));
-
-                    iv1.setImageBitmap(decoded);
+                    iv1.setImageBitmap(imageBitmap);
 
                 } catch (IOException e) {
                     e.printStackTrace();
