@@ -1,5 +1,6 @@
 package com.google.chatapplication20.activity;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -40,6 +41,7 @@ public class HomeActivity extends AppCompatActivity {
     private DatabaseReference mDatabaseGroup;
     private TextView showNoChat;
     private int countFriendRequest;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +49,7 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_home);
         Intent intent = getIntent();
         String goToFriendRequest = intent.getStringExtra("goToFriendRequest");
+
 
 
         if(goToFriendRequest != null){
@@ -72,6 +75,14 @@ public class HomeActivity extends AppCompatActivity {
                     SIGN_IN_REQUEST_CODE
             );
         } else {
+            progressDialog = new ProgressDialog(HomeActivity.this);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setIndeterminate(true);
+            progressDialog.setMessage("Loading ..");
+            progressDialog.setCancelable(false);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+
             updateRecentUser();
             invalidateOptionsMenu();
 
@@ -135,6 +146,7 @@ public class HomeActivity extends AppCompatActivity {
         applesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+
                 if (dataSnapshot.getChildrenCount() == 0) {
                     // run some code
                     user = new LastLoginUser(
@@ -260,31 +272,6 @@ public class HomeActivity extends AppCompatActivity {
                     }
                 }
 
-
-
-
-//                int counter = 0;
-//                for (DataSnapshot data : dataSnapshot.getChildren()) {
-//                    LastLoginUser user = data.getValue(LastLoginUser.class);
-//
-//                    if(friendArrayList != null && friendArrayList.size() != 0) {
-//                        Log.d("counter", String.valueOf(counter));
-//
-//                        if (counter < friendArrayList.size()) {
-//                            Log.d("userGetEmail", user.getUserEmail());
-//                            Log.d("userGetFriend", friendArrayList.get(counter));
-//                            if (user.getUserEmail().equalsIgnoreCase(friendArrayList.get(counter))) {
-//                                loginUserArrayList.add(user);
-//
-//                            }
-//
-//                        }
-//                    }
-//                    counter++;
-//                }
-
-
-
                 Log.d("loginUserFriend", String.valueOf(loginUsersFriend.size()));
                 mDatabase = FirebaseDatabase.getInstance().getReference("ChatMessage");
                 mDatabase.addValueEventListener(new ValueEventListener() {
@@ -362,8 +349,11 @@ public class HomeActivity extends AppCompatActivity {
                             }
                         }
 
-
-
+                        for(int a = 0 ; a < loginUserArrayList.size() ; a++){
+                            if(loginUserArrayList.get(a).getLastMessageTime() == 0){
+                                loginUserArrayList.remove(a);
+                            }
+                        }
 
                       mDatabaseGroup = FirebaseDatabase.getInstance().getReference("GroupChat");
                         mDatabaseGroup.addValueEventListener(new ValueEventListener() {
@@ -371,7 +361,20 @@ public class HomeActivity extends AppCompatActivity {
                             public void onDataChange(DataSnapshot dataSnapshot) {
                                 for(DataSnapshot data : dataSnapshot.getChildren()){
                                     GroupChat groupChat = data.getValue(GroupChat.class);
-                                    loginUserArrayList.add(new LastLoginUser(groupChat.getGroupChatName() + " (Group)"));
+                                    for(String member : groupChat.getGroupChatMember()){
+                                        if(member.equals(FirebaseAuth.getInstance()
+                                                .getCurrentUser()
+                                                .getEmail())){
+                                            loginUserArrayList.add(new LastLoginUser(groupChat.getGroupChatName() + " (Group)"));
+                                            if(groupChat.getGroupChatMessages() != null) {
+                                                for (ChatMessage ca : groupChat.getGroupChatMessages()) {
+                                                    loginUserArrayList.get(loginUserArrayList.size() - 1).setLastMessage(ca.getMessageText());
+                                                    loginUserArrayList.get(loginUserArrayList.size() - 1).setLastMessageTime(ca.getMessageTime());
+                                                    loginUserArrayList.get(loginUserArrayList.size() - 1).setLastMessagePicture(ca.isPicture());
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
 
 
@@ -389,7 +392,7 @@ public class HomeActivity extends AppCompatActivity {
                                     listOfMessages.setVisibility(View.GONE);
                                     showNoChat.setVisibility(View.VISIBLE);
                                 }
-
+                                progressDialog.dismiss();
                             }
 
                             @Override
@@ -419,6 +422,7 @@ public class HomeActivity extends AppCompatActivity {
 
             }
         });
+
 
     }
 

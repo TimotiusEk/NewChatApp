@@ -1,8 +1,11 @@
 package com.google.chatapplication20.adapter;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.format.DateFormat;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -18,9 +21,14 @@ import com.google.chatapplication20.activity.ChatActivity;
 import com.google.chatapplication20.model.ChatMessage;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+
+import static android.R.attr.bitmap;
+import static java.lang.System.out;
 
 /**
  * Created by TimotiusEk on 1/18/2017.
@@ -93,7 +101,13 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
             else{
                 try {
                     Bitmap imageBitmap = decodeFromFirebaseBase64(p.getMessageText());
-                    iv1.setImageBitmap(imageBitmap);
+
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                    Bitmap decoded = BitmapFactory.decodeStream(new ByteArrayInputStream(out.toByteArray()));
+
+                    iv1.setImageBitmap(decoded);
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -108,6 +122,8 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
 
                 String currentDate = (String) DateFormat.format("dd-MM-yyyy",
                         messageTime);
+
+
 
                 int todayDate = Integer.parseInt(currentDate.substring(0, 2));
                 int todayMonth = Integer.parseInt(currentDate.substring(3, 5));
@@ -150,8 +166,51 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         return v;
     }
 
+
+
     public static Bitmap decodeFromFirebaseBase64(String image) throws IOException {
         byte[] decodedByteArray = android.util.Base64.decode(image, Base64.DEFAULT);
+        ByteArrayInputStream is = new ByteArrayInputStream(decodedByteArray);
+        Drawable d = Drawable.createFromStream(is, "bloodsample");
         return BitmapFactory.decodeByteArray(decodedByteArray, 0, decodedByteArray.length);
+    }
+
+    public static int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        // Raw height and width of image
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
+    }
+
+    public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
+                                                         int reqWidth, int reqHeight) {
+
+        // First decode with inJustDecodeBounds=true to check dimensions
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(res, resId, options);
+
+        // Calculate inSampleSize
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeResource(res, resId, options);
     }
 }
