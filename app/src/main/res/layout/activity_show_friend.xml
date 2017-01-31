@@ -14,7 +14,6 @@
         android:layout_height="match_parent"
         android:id="@+id/show_friend_list_view"
         android:visibility="gone"
-        android:listSelector="@drawable/bkg"
         android:layout_above="@+id/create_group_chat_btn"
         />
 

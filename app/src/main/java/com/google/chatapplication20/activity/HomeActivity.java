@@ -392,7 +392,9 @@ public class HomeActivity extends AppCompatActivity {
                                     listOfMessages.setVisibility(View.GONE);
                                     showNoChat.setVisibility(View.VISIBLE);
                                 }
-                                progressDialog.dismiss();
+                                if(progressDialog != null) {
+                                    progressDialog.dismiss();
+                                }
                             }
 
                             @Override

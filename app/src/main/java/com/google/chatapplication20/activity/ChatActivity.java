@@ -1,5 +1,6 @@
 package com.google.chatapplication20.activity;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
@@ -26,7 +27,9 @@ import android.os.Bundle;
 import android.util.Base64;
 import android.util.FloatMath;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -69,6 +72,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -98,6 +102,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
     private TextView showBlockedInfo;
     private boolean isGroup;
     private String groupName;
+    private ArrayList<String> chatMemberInitialization;
+    private Context mContext;
 
     private static final String TAG = "Touch";
     @SuppressWarnings("unused")
@@ -123,6 +129,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        mContext = this;
         textMsgLayout = (RelativeLayout) findViewById(R.id.text_message_layout);
         pictureMsgLayout = (RelativeLayout) findViewById(R.id.picture_message_layout);
         listOfMessages = (ListView) findViewById(R.id.list_of_messages);
@@ -144,6 +151,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
 
         chatPartner = getIntent().getExtras().getString("email");
         isGroup = getIntent().getExtras().getBoolean("isGroup");
+
         Log.d("isGroup", String.valueOf(isGroup));
 
 
@@ -221,17 +229,17 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
                             builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    String strName = arrayAdapter.getItem(which);
-                                    AlertDialog.Builder builderInner = new AlertDialog.Builder(ChatActivity.this);
-                                    builderInner.setMessage(strName);
-                                    builderInner.setTitle("Your Selected Item is");
-                                    builderInner.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            dialog.dismiss();
-                                        }
-                                    });
-                                    builderInner.show();
+//                                    String strName = arrayAdapter.getItem(which);
+//                                    AlertDialog.Builder builderInner = new AlertDialog.Builder(ChatActivity.this);
+//                                    builderInner.setMessage(strName);
+//                                    builderInner.setTitle("Your Selected Item is");
+//                                    builderInner.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+//                                        @Override
+//                                        public void onClick(DialogInterface dialog, int which) {
+//                                            dialog.dismiss();
+//                                        }
+//                                    });
+//                                    builderInner.show();
                                 }
                             });
                             builderSingle.show();
@@ -260,6 +268,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
 
                 final String msg = input.getText().toString().trim();
 
@@ -317,9 +326,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
                     String messageId = mDatabase.push().getKey();
                     if (!msg.matches("")) {
                         mDatabase.child(messageId).setValue(message);
-
                         // Clear the input
                         input.setText("");
+                        scrollMyListViewToBottom();
                     }
                 }
             }
@@ -612,10 +621,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
                     unblockBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-
-                            /**
-                             * Todo : buat method unblock
-                             */
 
                             blockedListQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
@@ -987,6 +992,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
 
+
+
     private void displayChatMessages() {
         final EditText chatEditText = (EditText) findViewById(R.id.input);
 
@@ -1198,8 +1205,268 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
             new SaveImageTask().execute(null, null, null);
         } else if (item.getItemId() == R.id.menu_leave_group) {
             leaveGroup();
+        } else if(item.getItemId() == R.id.menu_invite_friends){
+            inviteMember();
         }
         return true;
+    }
+
+    private class EmailVO {
+        private String name;
+        private boolean selected;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public boolean isSelected() {
+            return selected;
+        }
+
+        public void setSelected(boolean selected) {
+            this.selected = selected;
+        }
+    }
+
+    private void inviteMember() {
+        final ArrayList<String> blockedUser = new ArrayList<>();
+
+        final DatabaseReference blockedUserRef = FirebaseDatabase.getInstance().getReference("BlockedUser");
+
+        final Query ourBlockedListQuery = blockedUserRef.orderByChild("userWhoBlock").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser()
+                .getEmail());
+
+
+        mDatabase = FirebaseDatabase.getInstance().getReference("LastLoginUser");
+        final Query getFriendsQuery = mDatabase.orderByChild("userEmail").equalTo(FirebaseAuth.getInstance()
+                .getCurrentUser().getEmail());
+
+        final AlertDialog.Builder adb = new AlertDialog.Builder(this);
+
+        getFriendsQuery.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for(DataSnapshot data : dataSnapshot.getChildren()) {
+                    final LastLoginUser user = data.getValue(LastLoginUser.class);
+                    if (user.getFriends() != null) {
+                        final int[] counter = {0};
+                        final boolean[] hasShown = {false};
+                        final int[] friendSize = {user.getFriends().size()};
+
+                        for (final String email : user.getFriends()) {
+                            final Query friendsBlockedListQuery = blockedUserRef.orderByChild("userWhoBlock").equalTo(email);
+
+                            friendsBlockedListQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    ArrayList<String> blockedUsers = new ArrayList<String>();
+                                    for(DataSnapshot data : dataSnapshot.getChildren()){
+                                        BlockedUser user = data.getValue(BlockedUser.class);
+                                        blockedUsers = user.getBlockedUser();
+                                    }
+
+                                    for(int a = 0 ; a < blockedUsers.size(); a++){
+                                        if(blockedUsers.get(a).equals(FirebaseAuth.getInstance()
+                                                .getCurrentUser()
+                                                .getEmail())){
+                                            blockedUser.add(email);
+                                        }
+                                    }
+
+                                    for (int a = 0; a < user.getFriends().size(); a++) {
+                                        if(user.getFriends().get(a).equals(FirebaseAuth.getInstance()
+                                                .getCurrentUser()
+                                                .getEmail())) {
+                                            user.getFriends().remove(a);
+                                        }
+
+
+                                        for (String email : blockedUser) {
+                                            if(a < user.getFriends().size()) {
+                                                if (email.equals(user.getFriends().get(a))) {
+                                                    user.getFriends().remove(a);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    ourBlockedListQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(DataSnapshot dataSnapshot) {
+                                            ArrayList<String> blockedUsersAl = new ArrayList<String>();
+                                            for(DataSnapshot data : dataSnapshot.getChildren()){
+                                                BlockedUser user = data.getValue(BlockedUser.class);
+                                                blockedUsersAl = user.getBlockedUser();
+                                            }
+
+                                            if(blockedUsersAl != null) {
+                                                    for (int a = 0; a < user.getFriends().size(); a++) {
+                                                        for (String emailToCompare : blockedUsersAl) {
+                                                            if (user.getFriends().get(a).equals(emailToCompare)) {
+                                                                user.getFriends().remove(a);
+
+                                                            }
+                                                        }
+
+                                                    }
+                                            }
+
+                                            mDatabase = FirebaseDatabase.getInstance().getReference("GroupChat");
+                                            Query findGroupQuery = mDatabase.orderByChild("groupChatName").equalTo(groupName);
+
+                                            findGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                                                @Override
+                                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                                    String groupChatId = null;
+                                                    ArrayList<ChatMessage> groupMessage = new ArrayList<ChatMessage>();
+                                                    ArrayList<String> groupMember = new ArrayList<String>();
+                                                    for(DataSnapshot data : dataSnapshot.getChildren()) {
+                                                        GroupChat groupChat = data.getValue(GroupChat.class);
+                                                        groupChatId = data.getKey();
+                                                        groupMember = groupChat.getGroupChatMember();
+                                                        groupMessage = groupChat.getGroupChatMessages();
+                                                    }
+                                                    if(groupMember != null){
+                                                        for (int a = 0; a < user.getFriends().size(); a++) {
+                                                            for (String emailToCompare : groupMember) {
+
+                                                                if (user.getFriends().get(a).equals(emailToCompare)) {
+                                                                    user.getFriends().remove(a);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    String[] emails  = new String[user.getFriends().size()];
+
+                                                    for(int a = 0 ; a < emails.length; a++){
+                                                        emails[a] = user.getFriends().get(a);
+                                                    }
+
+                                                    final ArrayList<EmailVO> emailObjList = new ArrayList<EmailVO>();
+
+
+                                                    final boolean[] checkedEmails = new boolean[emails.length];
+                                                    Log.d("checkedEmails", String.valueOf(emails.length));
+                                                    for(int a = 0 ; a < checkedEmails.length; a++){
+                                                        checkedEmails[a] = false;
+                                                    }
+
+                                                    for (int i = 0; i < emails.length; i++) {
+                                                        EmailVO emailVO = new EmailVO();
+                                                        emailVO.setName(emails[i]);
+                                                        emailVO.setSelected(checkedEmails[i]);
+                                                        emailObjList.add(emailVO);
+                                                    }
+                                                    counter[0]++;
+
+                                                    if(user.getFriends().size() != 0) {
+                                                        adb.setMultiChoiceItems(emails, checkedEmails, new DialogInterface.OnMultiChoiceClickListener() {
+                                                            @Override
+                                                            public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                                                emailObjList.get(which).setSelected(isChecked);
+//                                                                Toast.makeText(getApplicationContext(),
+//                                                                        emailObjList.get(which).getName() + " " + isChecked, Toast.LENGTH_SHORT).show();
+                                                            }
+                                                        });
+                                                        final ArrayList<String> finalGroupMember = groupMember;
+                                                        final String finalGroupChatId = groupChatId;
+                                                        final ArrayList<ChatMessage> finalGroupMessage = groupMessage;
+                                                        adb.setPositiveButton("Invite", new DialogInterface.OnClickListener() {
+                                                            @Override
+                                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                                int counter = 0 ;
+                                                                for(int a = 0 ; a < emailObjList.size() ; a++){
+                                                                    if(emailObjList.get(a).isSelected()){
+                                                                        finalGroupMember.add(emailObjList.get(a).getName());
+                                                                        finalGroupMessage.add(new ChatMessage(FirebaseAuth.getInstance()
+                                                                                .getCurrentUser()
+                                                                                .getEmail() + " has invited " + emailObjList.get(a).getName(), "BOT",false));
+                                                                        counter++;
+                                                                    }
+                                                                }
+
+                                                                mDatabase = FirebaseDatabase.getInstance().getReference("GroupChat");
+                                                                mDatabase.child(finalGroupChatId).child("groupChatMember").setValue(finalGroupMember);
+                                                                mDatabase.child(finalGroupChatId).child("groupChatMessages").setValue(finalGroupMessage);
+                                                                if(counter != 0) {
+                                                                    Toast.makeText(ChatActivity.this, "You have invited " + counter + " friends to this group chat", Toast.LENGTH_SHORT).show();
+                                                                } else{
+                                                                    Toast.makeText(ChatActivity.this, "You haven't choose any friends to be invited", Toast.LENGTH_SHORT).show();
+                                                                }
+                                                                Intent intent = getIntent();
+                                                                finish();
+                                                                startActivity(intent);
+                                                            }
+                                                        });
+                                                        adb.setNegativeButton("Cancel", null);
+                                                        adb.setTitle("Invite Friend");
+
+                                                        if (counter[0] == friendSize[0]) {
+                                                            if(!((Activity) mContext).isFinishing())
+                                                            {
+                                                                adb.show();
+                                                                //show dialog
+                                                            }
+                                                        }
+                                                    }
+                                                    else{
+                                                        if (counter[0] == friendSize[0]) {
+                                                            if (!((Activity) mContext).isFinishing()) {
+                                                                adb.setTitle("INFO");
+                                                                adb.setMessage("You have no friends to invite");
+                                                                adb.setNegativeButton("OK", null);
+                                                                adb.show();
+                                                            }
+                                                        }
+                                                    }
+
+
+                                                }
+
+                                                @Override
+                                                public void onCancelled(DatabaseError databaseError) {
+
+                                                }
+                                            });
+                                        }
+
+                                        @Override
+                                        public void onCancelled(DatabaseError databaseError) {
+
+                                        }
+                                    });
+
+
+
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+
+                                }
+                            });
+                        }
+
+
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
+
     }
 
     public static void addImageToGallery(final String filePath, final Context context) {
@@ -1422,11 +1689,13 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 ArrayList<String> groupMember = new ArrayList<String>();
+                ArrayList<ChatMessage> messages = new ArrayList<ChatMessage>();
                 String groupChatId = "";
                 for(DataSnapshot data : dataSnapshot.getChildren()) {
                     GroupChat groupChat = data.getValue(GroupChat.class);
                     groupChatId = data.getKey();
                     groupMember = groupChat.getGroupChatMember();
+                    messages = groupChat.getGroupChatMessages();
 
                 }
                 for(int a = 0 ; a< groupMember.size() ; a++){
@@ -1436,14 +1705,38 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
                         groupMember.remove(a);
                     }
                 }
-                if(groupMember.size() != 0) {
-                    mDatabase.child(groupChatId).child("groupChatMember").setValue(groupMember);
-                } else{
-                    mDatabase.child(groupChatId).removeValue();
-                }
 
-                Intent goToHome = new Intent(ChatActivity.this, HomeActivity.class);
-                startActivity(goToHome);
+                    final AlertDialog.Builder adb = new AlertDialog.Builder(ChatActivity.this);
+                    adb.setTitle("Confirmation");
+                    adb.setMessage("Are you sure want to leave this group?");
+
+                    final ArrayList<ChatMessage> finalMessages = messages;
+                    final String finalGroupChatId = groupChatId;
+                    final ArrayList<String> finalGroupMember = groupMember;
+                    adb.setPositiveButton("Leave", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            if(finalGroupMember.size() != 0) {
+                                finalMessages.add(new ChatMessage(FirebaseAuth.getInstance()
+                                        .getCurrentUser()
+                                        .getEmail() + " has left the group", "BOT", false));
+                                mDatabase.child(finalGroupChatId).child("groupChatMember").setValue(finalGroupMember);
+                                mDatabase.child(finalGroupChatId).child("groupChatMessages").setValue(finalMessages);
+                            }
+                            else{
+                                mDatabase.child(finalGroupChatId).removeValue();
+                            }
+                            Intent goToHome = new Intent(ChatActivity.this, HomeActivity.class);
+                            startActivity(goToHome);
+                        }
+                    });
+
+                    adb.setNegativeButton("Cancel", null);
+                    adb.show();
+
+
+
+
             }
 
             @Override
@@ -1514,8 +1807,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnTouchListe
             finish();
             startActivity(i);
         } else {
-            pictureMsgLayout.setVisibility(View.GONE);
-            textMsgLayout.setVisibility(View.VISIBLE);
+            Intent intent = getIntent();
+            finish();
+            startActivity(intent);
         }
         sendImgFab.setVisibility(View.VISIBLE);
         invalidateOptionsMenu();

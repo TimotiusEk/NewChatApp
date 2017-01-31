@@ -5,6 +5,9 @@
     <item android:title="Leave Group" app:showAsAction="never"
         android:id="@+id/menu_leave_group"/>
 
+    <item android:title="Invite Friends" app:showAsAction="never"
+        android:id="@+id/menu_invite_friends"/>
+
     <item android:title="Upload Photo" app:showAsAction="never"
         android:id="@+id/menu_upload_photo"/>
 

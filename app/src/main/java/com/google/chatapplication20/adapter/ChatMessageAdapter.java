@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import static android.R.attr.bitmap;
+import static android.R.attr.visible;
 import static java.lang.System.out;
 
 /**
@@ -70,6 +71,7 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
             TextView tt3 = (TextView) v.findViewById(R.id.message_user);
             TextView tt4 = (TextView) v.findViewById(R.id.unread_message_label);
             ImageView iv1 = (ImageView) v.findViewById(R.id.message_img);
+            TextView tt5 = (TextView) v.findViewById(R.id.click_to_open);
 
             tt1.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
@@ -99,14 +101,14 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
                 iv1.setVisibility(View.GONE);
             }
             else{
-                try {
-                    Bitmap imageBitmap = decodeFromFirebaseBase64(p.getMessageText());
-
-                    iv1.setImageBitmap(imageBitmap);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    Bitmap imageBitmap = decodeFromFirebaseBase64(p.getMessageText());
+//
+//                    iv1.setImageBitmap(imageBitmap);
+                    tt5.setVisibility(View.VISIBLE);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
             }
 
 
@@ -119,8 +121,6 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
                 String currentDate = (String) DateFormat.format("dd-MM-yyyy",
                         messageTime);
 
-
-
                 int todayDate = Integer.parseInt(currentDate.substring(0, 2));
                 int todayMonth = Integer.parseInt(currentDate.substring(3, 5));
                 int todayYear = Integer.parseInt(currentDate.substring(6));
@@ -128,7 +128,6 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
                 int msgDate = Integer.parseInt(messageDate.substring(0, 2));
                 int msgMonth = Integer.parseInt(messageDate.substring(3, 5));
                 int msgYear = Integer.parseInt(messageDate.substring(6));
-
 
                 if (messageDate.equalsIgnoreCase(currentDate)) {
                     tt2.setText(DateFormat.format("HH:mm",
